@@ -1,0 +1,21 @@
+# Environment and secrets
+.env
+.env.*
+
+# Runtime artifacts
+runs/
+logs/
+.outbox/
+staging/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Superpowers SDD scratch workspace
+.superpowers/

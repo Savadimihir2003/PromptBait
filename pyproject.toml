@@ -1,0 +1,13 @@
+[project]
+name = "promptbait"
+version = "0.1.0"
+description = "Tool-calling LLM agent, red-teamed with a 24-case prompt-injection suite"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = [
+  "live: hits real model providers; needs PROMPTBAIT_LIVE=1 and Ollama access",
+]
+addopts = "-ra"
