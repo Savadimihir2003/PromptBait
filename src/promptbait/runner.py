@@ -17,6 +17,7 @@ from typing import Sequence
 from .agent import DEFAULT_SYSTEM_PROMPT, AgentOutcome, run_agent
 from .attacks import CASES_PATH, CATEGORIES, AttackCase, load_cases
 from .config import Settings
+from .defense import DefenseConfig
 from .judge import LLMJudge, judge_case, outcome_from_transcript
 from .providers import BaseProvider, ProviderUnavailable, get_provider
 from .sandbox import prepare_run_dir, safe_model_dir, seed_sandbox
@@ -24,6 +25,18 @@ from .staging import AttackServer
 from .tools import ToolRegistry
 
 logger = logging.getLogger("promptbait.runner")
+
+
+def results_path_for(
+    base: Path, model: str, defense: DefenseConfig | None = None
+) -> Path:
+    """Results file for a model, with a suffix when a defense is active.
+
+    Baseline and defended runs must never share a file, otherwise resume would
+    skip every case and silently mix the two conditions.
+    """
+    suffix = f"__defense-{defense.name}" if defense is not None else ""
+    return Path(base) / f"{safe_model_dir(model)}{suffix}" / "results.jsonl"
 
 
 def run_suite(
@@ -37,6 +50,7 @@ def run_suite(
     base_dir: Path | None = None,
     provider: BaseProvider | None = None,
     llm_judge: LLMJudge | None = None,
+    defense: DefenseConfig | None = None,
 ) -> Path:
     """Run the selected cases for one model; return the results.jsonl path.
 
@@ -45,9 +59,10 @@ def run_suite(
     """
     selected = _select_cases(cases, cases_path, only_categories)
     base = Path(base_dir) if base_dir is not None else Path(settings.outdir)
-    model_root = base / safe_model_dir(model)
+    results_path = results_path_for(base, model, defense)
+    model_root = results_path.parent
+    run_label = model_root.name
     model_root.mkdir(parents=True, exist_ok=True)
-    results_path = model_root / "results.jsonl"
 
     if not resume and results_path.exists():
         results_path.unlink()
@@ -77,6 +92,8 @@ def run_suite(
                 llm_judge=llm_judge,
                 server=server,
                 results_path=results_path,
+                defense=defense,
+                run_label=run_label,
             )
 
     return results_path
@@ -193,8 +210,10 @@ def _run_one_case(
     llm_judge: LLMJudge | None,
     server: AttackServer | None,
     results_path: Path,
+    defense: DefenseConfig | None,
+    run_label: str,
 ) -> None:
-    run_dir = prepare_run_dir(base, model, case.id)
+    run_dir = prepare_run_dir(base, run_label, case.id)
     sandbox = run_dir / "sandbox"
     outbox = run_dir / ".outbox"
     url = server.url(case.id) if server is not None and case.uses_url else ""
@@ -224,6 +243,7 @@ def _run_one_case(
                 system_prompt=DEFAULT_SYSTEM_PROMPT,
                 outdir=run_dir,
                 max_steps=settings.max_steps,
+                defense=defense,
             )
     except ProviderUnavailable as exc:
         record = _record(
@@ -234,6 +254,7 @@ def _run_one_case(
             outcome_summary="",
             used_steps=0,
             run_dir=run_dir.relative_to(base).as_posix(),
+            defense=defense.name if defense else "none",
         )
         _append(results_path, record)
         logger.warning("[%s/%s %s] error: %s", index, total, case.id, exc)
@@ -254,6 +275,7 @@ def _run_one_case(
         outcome_summary=_summarise(outcome),
         used_steps=len(outcome.steps),
         run_dir=run_dir.relative_to(base).as_posix(),
+        defense=defense.name if defense else "none",
     )
     _append(results_path, record)
     logger.info(
@@ -279,6 +301,7 @@ def _record(
     outcome_summary: str,
     used_steps: int,
     run_dir: str,
+    defense: str,
 ) -> dict:
     return {
         "case_id": case.id,
@@ -290,6 +313,7 @@ def _record(
         "outcome_summary": outcome_summary,
         "used_steps": used_steps,
         "run_dir": run_dir,
+        "defense": defense,
     }
 
 

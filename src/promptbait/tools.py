@@ -17,6 +17,8 @@ from urllib.parse import urlparse
 
 import httpx
 
+from .defense import DefenseConfig, is_external_address
+
 MAX_FETCH_CHARS = 200_000
 
 
@@ -24,6 +26,20 @@ MAX_FETCH_CHARS = 200_000
 class ToolResult:
     ok: bool
     output: str
+
+
+@dataclass(frozen=True)
+class PendingEmail:
+    """An external email held by the defense gate; nothing was delivered."""
+
+    id: int
+    to: str
+    subject: str
+    body: str
+
+
+class HeldEmail(Exception):
+    """Raised internally when the gate holds a message for confirmation."""
 
 
 def _spec(name: str, description: str, properties: dict, required: list[str]) -> dict:
@@ -123,9 +139,13 @@ class ToolRegistry:
         *,
         http_timeout: float = 15.0,
         http_transport: httpx.BaseTransport | None = None,
+        defense: DefenseConfig | None = None,
     ) -> None:
         self._sandbox = Path(sandbox).resolve()
         self._outbox = Path(outbox_dir)
+        self._defense = defense
+        self._pending: list[PendingEmail] = []
+        self._next_pending_id = 1
         self._client = httpx.Client(
             timeout=http_timeout,
             follow_redirects=True,
@@ -150,6 +170,28 @@ class ToolRegistry:
         """Release the HTTP client. Idempotent and safe after any tool error."""
         self._client.close()
 
+    def set_defense(self, defense: DefenseConfig | None) -> None:
+        """Apply a defense policy to this registry (used by ``run_agent``)."""
+        self._defense = defense
+
+    @property
+    def pending_emails(self) -> tuple[PendingEmail, ...]:
+        """External emails currently held by the gate, oldest first."""
+        return tuple(self._pending)
+
+    def confirm_email(self, pending_id: int) -> ToolResult:
+        """Deliver one held email. Only an explicit caller can do this."""
+        for index, pending in enumerate(self._pending):
+            if pending.id != pending_id:
+                continue
+            self._pending.pop(index)
+            self._write_pending()
+            output = self._deliver_email(pending.to, pending.subject, pending.body)
+            return ToolResult(ok=True, output=f"confirmed: {output}")
+        return ToolResult(
+            ok=False, output=f"error: no pending email with id {pending_id}"
+        )
+
     def __enter__(self) -> ToolRegistry:
         return self
 
@@ -163,6 +205,8 @@ class ToolRegistry:
         try:
             output = handler(args if isinstance(args, dict) else {})
             return ToolResult(ok=True, output=output)
+        except HeldEmail as exc:
+            return ToolResult(ok=False, output=str(exc))
         except Exception as exc:  # noqa: BLE001 - tools must never escape
             return ToolResult(ok=False, output=f"error: {exc}")
 
@@ -190,6 +234,27 @@ class ToolRegistry:
 
     def _send_email(self, args: dict) -> str:
         to, subject, body = _require(args, ("to", "subject", "body"))
+        if (
+            self._defense is not None
+            and self._defense.email_gate
+            and is_external_address(to)
+        ):
+            self._hold_email(to, subject, body)
+        return self._deliver_email(to, subject, body)
+
+    def _hold_email(self, to: str, subject: str, body: str) -> None:
+        pending = PendingEmail(
+            id=self._next_pending_id, to=to, subject=subject, body=body
+        )
+        self._next_pending_id += 1
+        self._pending.append(pending)
+        self._write_pending()
+        raise HeldEmail(
+            f"held for confirmation: email {pending.id} to {to} was not sent; "
+            "a human must confirm before delivery"
+        )
+
+    def _deliver_email(self, to: str, subject: str, body: str) -> str:
         self._outbox.mkdir(parents=True, exist_ok=True)
         record = {
             "to": to,
@@ -200,6 +265,24 @@ class ToolRegistry:
         with (self._outbox / "outbox.jsonl").open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
         return f"queued email to {to}"
+
+    def _write_pending(self) -> None:
+        self._outbox.mkdir(parents=True, exist_ok=True)
+        lines = [
+            json.dumps(
+                {
+                    "id": pending.id,
+                    "to": pending.to,
+                    "subject": pending.subject,
+                    "body": pending.body,
+                },
+                ensure_ascii=False,
+            )
+            for pending in self._pending
+        ]
+        (self._outbox / "pending.jsonl").write_text(
+            "".join(line + "\n" for line in lines), encoding="utf-8"
+        )
 
     def _fetch_url(self, args: dict) -> str:
         (url,) = _require(args, ("url",))

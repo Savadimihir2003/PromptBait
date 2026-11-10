@@ -13,12 +13,12 @@ from pathlib import Path
 
 from .attacks import CATEGORIES, load_cases
 from .config import Settings
+from .defense import DEFENSE_V1, DefenseConfig
 from .judge import make_llm_judge
 from .logging_setup import setup
 from .providers import get_provider
 from .report import write_report
-from .runner import read_results, rejudge_results, run_suite
-from .sandbox import safe_model_dir
+from .runner import read_results, rejudge_results, results_path_for, run_suite
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -50,6 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--base-dir", type=Path, default=None)
     run.add_argument(
+        "--defense",
+        choices=("none", "v1"),
+        default="none",
+        help="defense layer to enable (default: none, the vulnerable baseline)",
+    )
+    run.add_argument(
         "--llm-judge",
         action=argparse.BooleanOptionalAction,
         default=False,
@@ -68,6 +74,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     rejudge.add_argument("--models", default=None)
     rejudge.add_argument("--base-dir", type=Path, default=None)
+    rejudge.add_argument(
+        "--defense",
+        choices=("none", "v1"),
+        default="none",
+        help="rejudge the defended run directory for this layer",
+    )
     rejudge.add_argument(
         "--llm-judge",
         action=argparse.BooleanOptionalAction,
@@ -118,10 +130,16 @@ def _categories(value: str | None) -> list[str] | None:
     return requested
 
 
+def _defense(value: str) -> DefenseConfig | None:
+    """Map the CLI name to a DefenseConfig (``none`` means no defense)."""
+    return DEFENSE_V1 if value == "v1" else None
+
+
 def _run(args: argparse.Namespace, settings: Settings) -> int:
     setup(verbose=True)
     models = _models(args.models, settings)
     categories = _categories(args.only_categories)
+    defense = _defense(args.defense)
 
     for model in models:
         llm_judge = None
@@ -137,6 +155,7 @@ def _run(args: argparse.Namespace, settings: Settings) -> int:
             resume=args.resume,
             base_dir=args.base_dir,
             llm_judge=llm_judge,
+            defense=defense,
         )
         rows = read_results(results_path)
         successes = sum(row.get("verdict") == "attack_success" for row in rows)
@@ -155,6 +174,7 @@ def _rejudge(args: argparse.Namespace, settings: Settings) -> int:
     models = _models(args.models, settings)
     base = Path(args.base_dir) if args.base_dir is not None else Path(settings.outdir)
     cases = load_cases()
+    defense = _defense(args.defense)
 
     for model in models:
         llm_judge = None
@@ -162,7 +182,7 @@ def _rejudge(args: argparse.Namespace, settings: Settings) -> int:
             judge_model = args.judge_model or model
             llm_judge = make_llm_judge(get_provider(judge_model, settings))
         stats = rejudge_results(
-            base / safe_model_dir(model) / "results.jsonl",
+            results_path_for(base, model, defense),
             cases=cases,
             base_dir=base,
             llm_judge=llm_judge,

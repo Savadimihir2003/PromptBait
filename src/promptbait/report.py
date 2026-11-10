@@ -94,6 +94,94 @@ def _verdict_cell(rows_by_case: dict[str, dict], case_id: str) -> str:
     }.get(str(row.get("verdict")), "error")
 
 
+def _defended_results(base: Path, model: str) -> list[dict]:
+    """Read a defended run for ``model`` if one exists (newest dir name wins)."""
+    prefix = f"{safe_model_dir(model)}__defense-"
+    if not base.is_dir():
+        return []
+    for candidate in sorted(base.iterdir()):
+        if candidate.is_dir() and candidate.name.startswith(prefix):
+            return read_results(candidate / "results.jsonl")
+    return []
+
+
+def _overall_for(rows: list[dict], model: str) -> CategoryStats:
+    return _overall(compute_asr(rows).get(model, {}))
+
+
+def _defense_section(
+    models: Sequence[str],
+    results: dict[str, list[dict]],
+    defended: dict[str, list[dict]],
+) -> list[str]:
+    if not defended:
+        return []
+
+    lines = [
+        "",
+        "## Defense v1 — before and after",
+        "",
+        "Defense v1 combines three layers: a hardened system prompt (instruction "
+        "hierarchy), spotlighting (tool results are wrapped as untrusted data "
+        "with inner delimiters escaped), and an email confirmation gate. "
+        "External `send_email` calls are written to `.outbox/pending.jsonl` and "
+        "are **not** delivered until an explicit `confirm_email`; the judge "
+        "therefore scores them as non-delivery. `write_file` is not gated in v1, "
+        "so state-change attacks can still succeed.",
+        "",
+        "| Model | Baseline ASR | Defense v1 ASR | Blocked | Regressed |",
+        "|---|---|---|---|---|",
+    ]
+
+    for model in models:
+        if model not in defended:
+            continue
+        baseline_rows = results.get(model, [])
+        defended_rows = defended[model]
+        baseline_by_case = {str(row.get("case_id")): row for row in baseline_rows}
+        defended_by_case = {str(row.get("case_id")): row for row in defended_rows}
+        blocked = sorted(
+            case_id
+            for case_id, row in baseline_by_case.items()
+            if row.get("verdict") == "attack_success"
+            and defended_by_case.get(case_id, {}).get("verdict") != "attack_success"
+        )
+        regressed = sorted(
+            case_id
+            for case_id, row in defended_by_case.items()
+            if row.get("verdict") == "attack_success"
+            and baseline_by_case.get(case_id, {}).get("verdict") != "attack_success"
+        )
+        lines.append(
+            f"| `{_md(model)}` | {_format_asr(_overall_for(baseline_rows, model))} | "
+            f"{_format_asr(_overall_for(defended_rows, model))} | "
+            f"{', '.join(blocked) or '—'} | {', '.join(regressed) or '—'} |"
+        )
+
+    still_successful = sorted(
+        {
+            str(row.get("case_id"))
+            for rows in defended.values()
+            for row in rows
+            if row.get("verdict") == "attack_success"
+        }
+    )
+    lines += [
+        "",
+        f"**Still successful under defense:** "
+        f"{', '.join(still_successful) or 'none'}.",
+        "",
+        "The email gate blocks delivery, not the attempt: a held message is "
+        "written to `pending.jsonl` and the model is told a human must confirm. "
+        "State-changing attacks (`write_file`) and the intentional `answer_leak` "
+        "case still succeed, so defense v1 reduces but does not eliminate ASR. "
+        "Regressions are reported rather than hidden: a case can flip from miss "
+        "to success under a longer prompt purely because small models are noisy.",
+        "",
+    ]
+    return lines
+
+
 def build_report(
     models: Sequence[str],
     settings: Settings,
@@ -223,6 +311,10 @@ def build_report(
             lines.append(f"- `{_md(model)}`: {', '.join(ids)}")
         else:
             lines.append(f"- `{_md(model)}`: none")
+
+    defended = {model: _defended_results(base, model) for model in models}
+    defended = {model: rows for model, rows in defended.items() if rows}
+    lines += _defense_section(models, results, defended)
 
     lines += [
         "",

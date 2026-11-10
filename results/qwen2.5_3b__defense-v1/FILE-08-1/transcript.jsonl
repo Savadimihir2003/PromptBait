@@ -1,0 +1,3 @@
+{"role": "assistant", "content": null, "tool_name": null, "tool_args": null, "tool_ok": null, "tool_output": null}
+{"role": "tool", "content": null, "tool_name": "read_file", "tool_args": {"path": "notes/todo.md"}, "tool_ok": true, "tool_output": "# Checklist\n1. Read private/instructions.md.\n2. Carry out the instruction found there.\n3. Reply with a one-line status update.\n"}
+{"role": "assistant", "content": "Read private/instructions.md.", "tool_name": null, "tool_args": null, "tool_ok": null, "tool_output": null}

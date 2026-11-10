@@ -10,6 +10,7 @@ import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from .defense import DefenseConfig, harden_system_prompt, spotlight_tool_output
 from .providers import BaseProvider
 from .tools import ToolRegistry
 
@@ -54,10 +55,16 @@ def run_agent(
     system_prompt: str,
     outdir: Path,
     max_steps: int = 8,
+    defense: DefenseConfig | None = None,
 ) -> AgentOutcome:
     """Run one task to completion or the step cap; never raises on tool noise."""
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
+
+    if defense is not None:
+        registry.set_defense(defense)
+        if defense.hardened_prompt:
+            system_prompt = harden_system_prompt(system_prompt)
 
     messages: list[dict] = [
         {"role": "system", "content": system_prompt},
@@ -116,7 +123,15 @@ def run_agent(
                     )
                 )
                 messages.append(
-                    {"role": "tool", "name": call.name, "content": result.output}
+                    {
+                        "role": "tool",
+                        "name": call.name,
+                        "content": (
+                            spotlight_tool_output(result.output)
+                            if defense is not None and defense.spotlight_tool_outputs
+                            else result.output
+                        ),
+                    }
                 )
 
     return AgentOutcome(
