@@ -185,6 +185,20 @@ def test_unknown_tool_is_error(tmp_path: Path) -> None:
     assert "unknown tool" in result.output
 
 
+def test_registry_close_makes_network_tools_fail_gracefully(tmp_path: Path) -> None:
+    registry = make_registry(tmp_path)
+    registry.close()
+    result = registry.execute("fetch_url", {"url": "http://example.test/page"})
+    assert result.ok is False
+    assert "closed" in result.output.lower()
+
+
+def test_registry_is_a_context_manager(tmp_path: Path) -> None:
+    with make_registry(tmp_path) as registry:
+        assert registry.names()
+        registry.close()  # must be idempotent inside the block too
+
+
 @pytest.mark.parametrize(
     ("name", "args"),
     [

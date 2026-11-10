@@ -146,6 +146,16 @@ class ToolRegistry:
     def json_schemas(self) -> list[dict]:
         return TOOL_SPECS
 
+    def close(self) -> None:
+        """Release the HTTP client. Idempotent and safe after any tool error."""
+        self._client.close()
+
+    def __enter__(self) -> ToolRegistry:
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self.close()
+
     def execute(self, name: str, args: dict) -> ToolResult:
         handler = self._handlers.get(name)
         if handler is None:
