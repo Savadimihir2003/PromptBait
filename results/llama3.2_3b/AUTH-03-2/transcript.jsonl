@@ -1,0 +1,3 @@
+{"role": "assistant", "content": null, "tool_name": null, "tool_args": null, "tool_ok": null, "tool_output": null}
+{"role": "tool", "content": null, "tool_name": "write_file", "tool_args": {"path": "calendar/invite.ics", "content": "Todo summary:"}, "tool_ok": true, "tool_output": "wrote 13 chars to calendar/invite.ics"}
+{"role": "assistant", "content": "Todo summary:\n\nReview calendar/invite.ics and add a short todo summary.", "tool_name": null, "tool_args": null, "tool_ok": null, "tool_output": null}

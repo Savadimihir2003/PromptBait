@@ -17,7 +17,7 @@ from typing import Sequence
 from .agent import DEFAULT_SYSTEM_PROMPT, AgentOutcome, run_agent
 from .attacks import CASES_PATH, CATEGORIES, AttackCase, load_cases
 from .config import Settings
-from .judge import LLMJudge, judge_case
+from .judge import LLMJudge, judge_case, outcome_from_transcript
 from .providers import BaseProvider, ProviderUnavailable, get_provider
 from .sandbox import prepare_run_dir, safe_model_dir, seed_sandbox
 from .staging import AttackServer
@@ -102,6 +102,65 @@ def read_results(path: Path) -> list[dict]:
     return rows
 
 
+def rejudge_results(
+    results_path: Path,
+    *,
+    cases: Sequence[AttackCase],
+    base_dir: Path,
+    llm_judge: LLMJudge | None = None,
+) -> dict[str, int]:
+    """Recompute verdicts from recorded transcripts, without re-running models.
+
+    Error rows and rows whose transcript is missing are left untouched: a
+    scoring change must never silently turn absent evidence into a verdict.
+    Returns counts so callers can report exactly what changed.
+    """
+    results_path = Path(results_path)
+    rows = read_results(results_path)
+    if not rows:
+        return {"rows": 0, "changed": 0, "skipped": 0, "missing": 0}
+
+    case_map = {case.id: case for case in cases}
+    changed = skipped = missing = 0
+    updated_rows: list[dict] = []
+
+    for row in rows:
+        case = case_map.get(str(row.get("case_id")))
+        if row.get("verdict") == "error" or case is None or not row.get("run_dir"):
+            skipped += 1
+            updated_rows.append(row)
+            continue
+
+        run_dir = Path(base_dir) / str(row["run_dir"])
+        transcript = run_dir / "transcript.jsonl"
+        if not transcript.is_file():
+            missing += 1
+            updated_rows.append(row)
+            continue
+
+        outcome = outcome_from_transcript(transcript)
+        verdict, evidence = judge_case(case, outcome, run_dir, llm_judge=llm_judge)
+        if verdict != row.get("verdict"):
+            changed += 1
+        updated = dict(row)
+        updated["verdict"] = verdict
+        updated["evidence"] = evidence
+        updated_rows.append(updated)
+
+    temporary = results_path.with_suffix(".jsonl.tmp")
+    temporary.write_text(
+        "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in updated_rows),
+        encoding="utf-8",
+    )
+    temporary.replace(results_path)
+    return {
+        "rows": len(rows),
+        "changed": changed,
+        "skipped": skipped,
+        "missing": missing,
+    }
+
+
 # --------------------------------------------------------------------- internals
 
 
@@ -174,6 +233,7 @@ def _run_one_case(
             evidence=[f"provider unavailable: {exc}"],
             outcome_summary="",
             used_steps=0,
+            run_dir=run_dir.relative_to(base).as_posix(),
         )
         _append(results_path, record)
         logger.warning("[%s/%s %s] error: %s", index, total, case.id, exc)
@@ -193,6 +253,7 @@ def _run_one_case(
         evidence=evidence,
         outcome_summary=_summarise(outcome),
         used_steps=len(outcome.steps),
+        run_dir=run_dir.relative_to(base).as_posix(),
     )
     _append(results_path, record)
     logger.info(
@@ -217,6 +278,7 @@ def _record(
     evidence: list[str],
     outcome_summary: str,
     used_steps: int,
+    run_dir: str,
 ) -> dict:
     return {
         "case_id": case.id,
@@ -227,6 +289,7 @@ def _record(
         "evidence": evidence,
         "outcome_summary": outcome_summary,
         "used_steps": used_steps,
+        "run_dir": run_dir,
     }
 
 

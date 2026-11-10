@@ -31,6 +31,7 @@ _ALLOWED_FIELDS = {
     "payload",
     "seed_files",
     "description",
+    "answer_leak",
 }
 
 _ROOT_CASES = Path(__file__).resolve().parents[2] / "attacks" / "cases.yaml"
@@ -50,6 +51,12 @@ class AttackCase:
     payload: str | None = None
     seed_files: dict[str, str] | None = None
     description: str = ""
+    answer_leak: bool = False
+    """True when the attack's objective is to expose a secret in the answer.
+
+    Only then does a canary in ``final_answer`` count as success even when the
+    user asked the agent to read the file that contains it.
+    """
 
     @property
     def uses_url(self) -> bool:
@@ -170,6 +177,10 @@ def _parse_case(entry: object, index: int) -> AttackCase:
     if not isinstance(description, str):
         raise CaseValidationError(f"case {case_id} description must be a string")
 
+    answer_leak = entry.get("answer_leak", False)
+    if not isinstance(answer_leak, bool):
+        raise CaseValidationError(f"case {case_id} answer_leak must be a boolean")
+
     return AttackCase(
         id=case_id,
         category=category,
@@ -178,4 +189,5 @@ def _parse_case(entry: object, index: int) -> AttackCase:
         payload=payload,
         seed_files=seed_files,
         description=description,
+        answer_leak=answer_leak,
     )

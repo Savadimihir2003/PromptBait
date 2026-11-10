@@ -3,10 +3,11 @@
 .env.*
 
 # Runtime artifacts
-runs/
-logs/
-.outbox/
-staging/
+/runs/
+/logs/
+/.outbox/
+/staging/
+/examples/runs/
 
 # Python
 __pycache__/
