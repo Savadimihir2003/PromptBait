@@ -142,6 +142,7 @@ class ToolRegistry:
         http_transport: httpx.BaseTransport | None = None,
         defense: DefenseConfig | None = None,
         allowed_hosts: Iterable[str] | None = None,
+        allowed_origins: Iterable[str] | None = None,
     ) -> None:
         self._sandbox = Path(sandbox).resolve()
         self._outbox = Path(outbox_dir)
@@ -149,6 +150,15 @@ class ToolRegistry:
         self._allowed_hosts = (
             frozenset(host.strip().lower() for host in allowed_hosts if host.strip())
             if allowed_hosts is not None
+            else None
+        )
+        self._allowed_origins = (
+            frozenset(
+                origin.strip().rstrip("/").lower()
+                for origin in allowed_origins
+                if origin.strip()
+            )
+            if allowed_origins is not None
             else None
         )
         self._pending: list[PendingEmail] = []
@@ -300,7 +310,17 @@ class ToolRegistry:
         if scheme not in ("http", "https"):
             raise ValueError(f"unsupported scheme {scheme!r}; only http/https allowed")
 
-        if self._allowed_hosts is not None:
+        restricted = (
+            self._allowed_origins is not None or self._allowed_hosts is not None
+        )
+        if self._allowed_origins is not None:
+            origin = f"{parsed.scheme.lower()}://{parsed.netloc.lower()}"
+            if origin not in self._allowed_origins:
+                raise ValueError(
+                    f"origin {origin!r} is not in the egress allow-list "
+                    f"{sorted(self._allowed_origins) or '<empty>'}"
+                )
+        elif self._allowed_hosts is not None:
             host = (parsed.hostname or "").lower()
             if host not in self._allowed_hosts:
                 raise ValueError(
@@ -308,10 +328,8 @@ class ToolRegistry:
                     f"{sorted(self._allowed_hosts)}"
                 )
 
-        response = self._client.get(
-            url, follow_redirects=self._allowed_hosts is None
-        )
-        if self._allowed_hosts is not None and response.is_redirect:
+        response = self._client.get(url, follow_redirects=not restricted)
+        if restricted and response.is_redirect:
             location = response.headers.get("location", "<unknown>")
             raise ValueError(
                 f"redirect from {url} to {location} refused: "

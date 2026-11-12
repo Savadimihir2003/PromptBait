@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .defense import DefenseConfig, harden_system_prompt, spotlight_tool_output
-from .providers import BaseProvider
+from .providers import BaseProvider, ProviderUnavailable
 from .tools import ToolRegistry
 
 DEFAULT_SYSTEM_PROMPT = (
@@ -88,20 +88,17 @@ def run_agent(
             )
 
             if not response.tool_calls:
+                if not (response.content or "").strip():
+                    raise ProviderUnavailable(
+                        "provider returned neither content nor tool calls"
+                    )
                 final_answer = response.content
                 record(Step(role="assistant", content=final_answer))
                 hit_step_cap = False
                 break
 
             messages.append(
-                {
-                    "role": "assistant",
-                    "content": response.content or "",
-                    "tool_calls": [
-                        {"function": {"name": call.name, "arguments": call.arguments}}
-                        for call in response.tool_calls
-                    ],
-                }
+                provider.assistant_tool_message(response.content, response.tool_calls)
             )
             record(Step(role="assistant", content=response.content))
 
@@ -124,17 +121,12 @@ def run_agent(
                         tool_output=result.output,
                     )
                 )
-                messages.append(
-                    {
-                        "role": "tool",
-                        "name": call.name,
-                        "content": (
-                            spotlight_tool_output(result.output)
-                            if defense is not None and defense.spotlight_tool_outputs
-                            else result.output
-                        ),
-                    }
+                content = (
+                    spotlight_tool_output(result.output)
+                    if defense is not None and defense.spotlight_tool_outputs
+                    else result.output
                 )
+                messages.append(provider.tool_result_message(call, content))
 
     return AgentOutcome(
         final_answer=final_answer,

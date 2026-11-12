@@ -168,6 +168,47 @@ def test_provider_failure_propagates(env: Env) -> None:
         )
 
 
+def test_agent_treats_an_empty_final_response_as_a_provider_error(env: Env) -> None:
+    """A 200 with neither content nor tool calls is a glitch, not a clean miss."""
+    env.provider = ScriptedProvider([ChatResponse(content="", tool_calls=[])])
+    with pytest.raises(ProviderUnavailable):
+        run_agent(
+            "go",
+            env.provider,
+            env.registry,
+            system_prompt="s",
+            outdir=env.outdir,
+        )
+
+
+def test_agent_delegates_tool_message_shape_to_the_provider(env: Env) -> None:
+    (env.sandbox / "notes.txt").write_text("n", encoding="utf-8")
+
+    class TaggedProvider(ScriptedProvider):
+        def assistant_tool_message(self, content, calls):  # type: ignore[override]
+            message = super().assistant_tool_message(content, calls)
+            message["tagged"] = True
+            return message
+
+        def tool_result_message(self, call, content):  # type: ignore[override]
+            message = super().tool_result_message(call, content)
+            message["tagged"] = True
+            return message
+
+    env.provider = TaggedProvider(
+        [call("read_file", path="notes.txt"), ChatResponse(content="ok")]
+    )
+    run_agent(
+        "go",
+        env.provider,
+        env.registry,
+        system_prompt="s",
+        outdir=env.outdir,
+    )
+    second_turn = env.provider.calls[1]
+    assert any(message.get("tagged") for message in second_turn)
+
+
 def test_agent_passes_the_configured_temperature(env: Env) -> None:
     temperatures: list[float] = []
 

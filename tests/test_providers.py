@@ -91,6 +91,12 @@ def test_ollama_handles_malformed_tool_arguments() -> None:
     assert call.arguments["_raw"] == "{not json"
 
 
+def test_ollama_non_dict_chunk_is_provider_unavailable() -> None:
+    p = OllamaProvider(model="m", transport=mock_transport([None]))
+    with pytest.raises(ProviderUnavailable):
+        p.chat([{"role": "user", "content": "hi"}])
+
+
 def test_ollama_concatenates_streamed_ndjson_content() -> None:
     chunks = [
         {"message": {"role": "assistant", "content": "hel"}, "done": False},
@@ -142,6 +148,56 @@ def test_openai_compat_maps_messages_and_tools() -> None:
     assert record[0].headers["authorization"] == "Bearer k"
 
 
+def test_openai_compat_round_trips_tool_call_ids() -> None:
+    payload = openai_compat(
+        tool_calls=[
+            {
+                "id": "call_abc",
+                "type": "function",
+                "function": {"name": "read_file", "arguments": {"path": "a.txt"}},
+            }
+        ]
+    )
+    p = OpenAICompatProvider(
+        model="m",
+        base_url="https://x/v1",
+        api_key="k",
+        transport=mock_transport(payload),
+    )
+    response = p.chat([{"role": "user", "content": "go"}])
+    call = response.tool_calls[0]
+    assert call.id == "call_abc"
+
+    assistant = p.assistant_tool_message(None, [call])
+    assert assistant["tool_calls"][0]["id"] == "call_abc"
+    assert assistant["tool_calls"][0]["type"] == "function"
+
+    tool = p.tool_result_message(call, "file body")
+    assert tool == {
+        "role": "tool",
+        "tool_call_id": "call_abc",
+        "content": "file body",
+    }
+
+
+def test_openai_compat_synthesises_missing_tool_call_ids() -> None:
+    payload = openai_compat(
+        tool_calls=[
+            {"function": {"name": "read_file", "arguments": {"path": "a.txt"}}}
+        ]
+    )
+    p = OpenAICompatProvider(
+        model="m",
+        base_url="https://x/v1",
+        api_key="k",
+        transport=mock_transport(payload),
+    )
+    call = p.chat([{"role": "user", "content": "go"}]).tool_calls[0]
+    assert call.id == "call_1"
+    assert p.assistant_tool_message(None, [call])["tool_calls"][0]["id"] == "call_1"
+    assert p.tool_result_message(call, "x")["tool_call_id"] == "call_1"
+
+
 def test_openai_compat_parses_tool_call_arguments_string() -> None:
     payload = openai_compat(
         tool_calls=[
@@ -158,7 +214,11 @@ def test_openai_compat_parses_tool_call_arguments_string() -> None:
     p = OpenAICompatProvider(model="m", base_url="https://api.groq.com/openai/v1", api_key="k", transport=mock_transport(payload))
     resp = p.chat([{"role": "user", "content": "go"}])
     assert resp.tool_calls == [
-        ToolCall(name="send_email", arguments={"to": "x@y.z", "subject": "s", "body": "b"})
+        ToolCall(
+            name="send_email",
+            arguments={"to": "x@y.z", "subject": "s", "body": "b"},
+            id="call_1",
+        )
     ]
 
 

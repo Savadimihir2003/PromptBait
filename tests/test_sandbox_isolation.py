@@ -6,6 +6,7 @@ case's sandbox. These tests attack that property directly.
 
 from __future__ import annotations
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -112,6 +113,24 @@ def test_parallel_prepare_calls_never_share_a_directory(tmp_path: Path) -> None:
 
     assert len(set(runs)) == 24
     assert len({run.name for run in runs}) == 24
+
+
+def test_sanitised_model_name_collision_is_rejected(tmp_path: Path) -> None:
+    """``a:b`` and ``a/b`` both sanitise to ``a_b``; never mix their rows."""
+    prepare_run_dir(tmp_path, "a:b", "DIR-01")
+    with pytest.raises(ValueError, match="belongs to model"):
+        prepare_run_dir(tmp_path, "a/b", "DIR-02")
+
+
+def test_existing_results_file_also_guards_model_collisions(tmp_path: Path) -> None:
+    """Committed evidence predates the marker; its result rows still identify it."""
+    model_root = tmp_path / "a_b"
+    model_root.mkdir()
+    (model_root / "results.jsonl").write_text(
+        json.dumps({"model": "a:b"}) + "\n", encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="belongs to model"):
+        prepare_run_dir(tmp_path, "a/b", "DIR-01")
 
 
 def test_reset_base_only_removes_that_model(tmp_path: Path) -> None:

@@ -12,6 +12,7 @@ Isolation rules
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 from pathlib import Path
@@ -36,6 +37,7 @@ def prepare_run_dir(base: Path, model: str, case_id: str) -> Path:
 
     model_root = Path(base) / safe_model_dir(model)
     model_root.mkdir(parents=True, exist_ok=True)
+    _claim_model_root(model_root, model)
 
     suffix = 1
     while True:
@@ -47,6 +49,43 @@ def prepare_run_dir(base: Path, model: str, case_id: str) -> Path:
             continue
         (run_dir / "sandbox").mkdir()
         return run_dir
+
+
+def _claim_model_root(model_root: Path, model: str) -> None:
+    """Refuse to reuse one results directory for a different model tag.
+
+    ``safe_model_dir`` is lossy (``a:b``, ``a/b`` and ``a b`` all become
+    ``a_b``). A marker makes that collision loud instead of silently merging
+    two models' rows into one results file.
+    """
+    marker = model_root / ".model"
+    if marker.is_file():
+        recorded = marker.read_text(encoding="utf-8", errors="replace").strip()
+        if not recorded:
+            # Another worker created the marker but has not written it yet.
+            marker.write_text(model, encoding="utf-8")
+            return
+    else:
+        # Older/committed evidence predates the marker; its rows already name
+        # the model, so use that as the same guard.
+        recorded = ""
+        results = model_root / "results.jsonl"
+        if results.is_file():
+            try:
+                first = json.loads(results.read_text(encoding="utf-8").splitlines()[0])
+                recorded = str(first.get("model") or "")
+            except (OSError, IndexError, json.JSONDecodeError, AttributeError):
+                recorded = ""
+        if not recorded:
+            marker.write_text(model, encoding="utf-8")
+            return
+    if recorded != model:
+        raise ValueError(
+            f"results directory {model_root} belongs to model {recorded!r}, "
+            f"not {model!r}"
+        )
+    if not marker.is_file():
+        marker.write_text(model, encoding="utf-8")
 
 
 def seed_sandbox(sandbox: Path, seeds: dict[str, str]) -> list[Path]:

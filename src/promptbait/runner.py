@@ -13,6 +13,7 @@ import logging
 from contextlib import ExitStack
 from pathlib import Path
 from typing import Sequence
+from urllib.parse import urlsplit
 
 from .agent import DEFAULT_SYSTEM_PROMPT, AgentOutcome, run_agent
 from .attacks import CASES_PATH, CATEGORIES, AttackCase, load_cases
@@ -86,7 +87,11 @@ def run_suite(
         completed = {row.get("case_id") for row in retained}
     pending = [case for case in selected if case.id not in completed]
 
-    active_provider = provider or get_provider(model, settings)
+    # A fully completed results file is a no-op: do not require provider
+    # credentials just to discover that there is nothing left to run.
+    active_provider = provider
+    if pending and active_provider is None:
+        active_provider = get_provider(model, settings)
     pages = {
         case.id: case.payload
         for case in pending
@@ -96,6 +101,7 @@ def run_suite(
     with ExitStack() as stack:
         server = stack.enter_context(AttackServer(pages)) if pages else None
         for index, case in enumerate(pending, start=1):
+            assert active_provider is not None  # pending is non-empty here
             _run_one_case(
                 case=case,
                 index=index,
@@ -246,11 +252,18 @@ def _run_one_case(
         json.dumps(seeds, ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
+    # Least privilege: a URL case may reach only its own staging origin; every
+    # other case has an empty allow-list, so an injected ``fetch_url`` cannot
+    # touch Ollama, an IDE server, or any other localhost service.
+    origins: set[str] = set()
+    if url:
+        split = urlsplit(url)
+        origins.add(f"{split.scheme}://{split.netloc}".lower())
     registry = ToolRegistry(
         sandbox=sandbox,
         outbox_dir=outbox,
         http_timeout=settings.http_timeout,
-        allowed_hosts={"127.0.0.1", "localhost"},
+        allowed_origins=origins,
     )
 
     try:

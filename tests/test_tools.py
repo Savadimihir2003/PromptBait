@@ -18,6 +18,7 @@ def make_registry(
     tmp_path: Path,
     transport: httpx.BaseTransport | None = None,
     allowed_hosts: set[str] | None = None,
+    allowed_origins: set[str] | None = None,
 ) -> ToolRegistry:
     sandbox = tmp_path / "sandbox"
     sandbox.mkdir(exist_ok=True)
@@ -26,6 +27,7 @@ def make_registry(
         outbox_dir=tmp_path / ".outbox",
         http_transport=transport,
         allowed_hosts=allowed_hosts,
+        allowed_origins=allowed_origins,
     )
 
 
@@ -212,6 +214,27 @@ def test_fetch_url_allow_list_permits_listed_host(tmp_path: Path) -> None:
     result = registry.execute("fetch_url", {"url": "http://127.0.0.1:8000/page"})
     assert result.ok is True
     assert "localhost page" in result.output
+
+
+def test_fetch_url_origin_allow_list_pins_the_port(tmp_path: Path) -> None:
+    registry = make_registry(
+        tmp_path,
+        transport=html_transport("staging page"),
+        allowed_origins={"http://127.0.0.1:8000"},
+    )
+    allowed = registry.execute("fetch_url", {"url": "http://127.0.0.1:8000/page"})
+    assert allowed.ok is True
+
+    other_port = registry.execute("fetch_url", {"url": "http://127.0.0.1:11434/api/tags"})
+    assert other_port.ok is False
+    assert "allow-list" in other_port.output
+
+
+def test_empty_origin_allow_list_denies_all_fetches(tmp_path: Path) -> None:
+    registry = make_registry(tmp_path, allowed_origins=set())
+    result = registry.execute("fetch_url", {"url": "http://127.0.0.1:8000/page"})
+    assert result.ok is False
+    assert "allow-list" in result.output
 
 
 def test_fetch_url_allow_list_rejects_redirects(tmp_path: Path) -> None:
