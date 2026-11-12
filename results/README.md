@@ -19,10 +19,10 @@ It contains exactly the run directories referenced by the final
 | Temperature | 0.2 (agent), 0.0 (optional LLM judge, not used for the headline) |
 | Scoring | deterministic, then `lab rejudge` over the recorded transcripts; identical rewrites are not state changes |
 
-The plan called for three Ollama cloud models. On 2026-11-10 all three returned
-HTTP 402 ("Add usage credits ..."), and no OpenRouter/Groq key was available.
-The two local models above are a documented substitution. See the report's
-"Environment and model substitution" section.
+The plan called for three Ollama cloud models. On 2026-11-10 and again on
+2026-11-12, all three returned HTTP 402 ("Add usage credits ..."), and no
+OpenRouter/Groq key was available. The two local models above are a documented
+substitution. See the report's "Environment and model substitution" section.
 
 ## Verdict counts
 

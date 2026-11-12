@@ -34,11 +34,11 @@ eliminate ASR. The gate records held mail in `.outbox/pending.jsonl`; nothing is
 delivered without an explicit `confirm_email`.
 
 **Important substitution:** the plan named `gpt-oss:120b-cloud`,
-`nemotron-3-super:cloud`, and `gemma4:31b-cloud`. On 2026-11-10 all three
-returned **HTTP 402 — "Add usage credits"**, and no OpenRouter/Groq key was
-available. The live runs therefore use two free local 3B models. These numbers
-describe small CPU models, not frontier cloud models. The full methodology and
-limitations are in [`reports/report.md`](reports/report.md).
+`nemotron-3-super:cloud`, and `gemma4:31b-cloud`. On 2026-11-10 and again on
+2026-11-12, all three returned **HTTP 402 — "Add usage credits"**, and no
+OpenRouter/Groq key was available. The live runs therefore use two free local 3B
+models. These numbers describe small CPU models, not frontier cloud models. The
+full methodology and limitations are in [`reports/report.md`](reports/report.md).
 
 ## Why this exists
 

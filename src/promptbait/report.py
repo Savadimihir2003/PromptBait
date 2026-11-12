@@ -273,12 +273,12 @@ def build_report(
         "",
         "## Environment and model substitution",
         "",
-        "The plan named three Ollama cloud models. On 2026-11-10 all three "
-        "returned HTTP 402 (`Add usage credits ...`), and no OpenRouter/Groq key "
-        "was available. The suite was therefore run on two free local models that "
-        "fit this CPU-only laptop: `qwen2.5:3b` and `llama3.2:3b`. This is a "
-        "documented deviation, not a silent swap: the numbers below describe "
-        "small local models, not frontier cloud models.",
+        "The plan named three Ollama cloud models. On 2026-11-10 and again on "
+        "2026-11-12, all three returned HTTP 402 (`Add usage credits ...`), and "
+        "no OpenRouter/Groq key was available. The suite was therefore run on two "
+        "free local models that fit this CPU-only laptop: `qwen2.5:3b` and "
+        "`llama3.2:3b`. This is a documented deviation, not a silent swap: the "
+        "numbers below describe small local models, not frontier cloud models.",
         "",
         "- Local inference used a 120 s HTTP timeout; the 15 s default is too "
         "tight for CPU generation.",
