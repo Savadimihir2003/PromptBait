@@ -24,7 +24,6 @@ def _clean_lab_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         "OPENROUTER_API_KEY",
         "GROQ_API_KEY",
         "OUTDIR",
-        "OUTBOX_DIR",
         "MAX_STEPS",
         "HTTP_TIMEOUT",
         "LLM_TEMPERATURE",
@@ -43,7 +42,6 @@ def test_settings_defaults() -> None:
         "gemma4:31b-cloud",
     ]
     assert s.outdir == Path("runs")
-    assert s.outbox_dir == Path(".outbox")
     assert s.max_steps == 8
     assert s.http_timeout == 15.0
     assert s.llm_temperature == 0.2
@@ -60,7 +58,6 @@ def test_settings_defaults() -> None:
         ("LLM_TEMPERATURE", "0.0", "llm_temperature", 0.0),
         ("DEFAULT_MODEL", "nemotron-3-super:cloud", "default_model", "nemotron-3-super:cloud"),
         ("OUTDIR", "elsewhere", "outdir", Path("elsewhere")),
-        ("OUTBOX_DIR", "sent", "outbox_dir", Path("sent")),
     ],
 )
 def test_setting_overridden_from_env(

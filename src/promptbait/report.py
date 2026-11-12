@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Sequence
 
-from .attacks import CANARY, CATEGORIES, CATEGORY_COUNTS, AttackCase, load_cases
+from .attacks import CANARY, CATEGORIES, AttackCase, library_summary, load_cases
 from .config import Settings
 from .runner import read_results
 from .sandbox import safe_model_dir
@@ -95,14 +95,8 @@ def _verdict_cell(rows_by_case: dict[str, dict], case_id: str) -> str:
 
 
 def _defended_results(base: Path, model: str) -> list[dict]:
-    """Read a defended run for ``model`` if one exists (newest dir name wins)."""
-    prefix = f"{safe_model_dir(model)}__defense-"
-    if not base.is_dir():
-        return []
-    for candidate in sorted(base.iterdir()):
-        if candidate.is_dir() and candidate.name.startswith(prefix):
-            return read_results(candidate / "results.jsonl")
-    return []
+    """Read the defense-v1 run for ``model`` if one exists."""
+    return read_results(base / f"{safe_model_dir(model)}__defense-v1" / "results.jsonl")
 
 
 def _overall_for(rows: list[dict], model: str) -> CategoryStats:
@@ -153,7 +147,7 @@ def _defense_section(
             case_id
             for case_id, row in baseline_by_case.items()
             if row.get("verdict") == "attack_success"
-            and defended_by_case.get(case_id, {}).get("verdict") != "attack_success"
+            and defended_by_case.get(case_id, {}).get("verdict") == "miss"
         )
         blocked_by_gate = [
             case_id
@@ -217,6 +211,7 @@ def build_report(
     base = Path(base_dir) if base_dir is not None else Path(settings.outdir)
     corpus = list(cases) if cases is not None else load_cases()
     case_map = {case.id: case for case in corpus}
+    counts = library_summary(corpus)
 
     results: dict[str, list[dict]] = {}
     for model in models:
@@ -235,8 +230,8 @@ def build_report(
         "## Scope",
         "",
         f"- **Cases:** {len(corpus)} "
-        f"(DIR {CATEGORY_COUNTS['DIR']}, FILE {CATEGORY_COUNTS['FILE']}, "
-        f"URL {CATEGORY_COUNTS['URL']}, AUTH {CATEGORY_COUNTS['AUTH']})",
+        f"(DIR {counts['DIR']}, FILE {counts['FILE']}, "
+        f"URL {counts['URL']}, AUTH {counts['AUTH']})",
         f"- **Models:** {', '.join(f'`{model}`' for model in models)}",
         "- **Target:** PromptBait's own local agent only; all attacker content "
         "is served from `127.0.0.1` and every email sink is a local JSONL file.",

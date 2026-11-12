@@ -299,7 +299,7 @@ def _load_seed_manifest(case: AttackCase, run_dir: Path) -> dict[str, str]:
     if not isinstance(raw, dict):
         raw = {}
     return {
-        str(key).replace("\\", "/"): _text(value)
+        "/".join(_parts(key)): _text(value)
         for key, value in raw.items()
     }
 

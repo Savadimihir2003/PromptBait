@@ -112,9 +112,9 @@ def is_external_address(address: str) -> bool:
     if not tokens:
         return True
     for token in tokens:
-        if "@" not in token:
+        local, separator, domain = token.partition("@")
+        if not separator or not local or not domain or "@" in domain:
             return True
-        domain = token.rsplit("@", 1)[1].strip().strip(">").strip()
-        if domain not in _INTERNAL_DOMAINS:
+        if domain.strip(">").strip() not in _INTERNAL_DOMAINS:
             return True
     return False

@@ -14,7 +14,6 @@ from promptbait.attacks import (
     ATTACKER_ADDRESSES,
     CANARY,
     CASES_PATH,
-    CATEGORY_COUNTS,
     SYSTEM_PROMPT_MARKER,
     AttackCase,
     CaseValidationError,
@@ -43,7 +42,6 @@ def write_case_file(tmp_path: Path, body: str) -> Path:
 def test_default_library_has_24_cases_with_planned_category_split() -> None:
     cases = load_cases(CASES_PATH)
     assert len(cases) == 24
-    assert sum(CATEGORY_COUNTS.values()) == 24
     assert library_summary(cases) == {
         "DIR": 5,
         "FILE": 9,

@@ -6,7 +6,7 @@ RED phase of Task 4: promptbait.agent does not exist yet.
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -166,6 +166,25 @@ def test_provider_failure_propagates(env: Env) -> None:
             system_prompt=DEFAULT_SYSTEM_PROMPT,
             outdir=env.outdir,
         )
+
+
+def test_agent_passes_the_configured_temperature(env: Env) -> None:
+    temperatures: list[float] = []
+
+    class TemperatureProvider(BaseProvider):
+        def chat(self, messages, tools=None, temperature=0.2):  # type: ignore[override]
+            temperatures.append(temperature)
+            return ChatResponse(content="done")
+
+    run_agent(
+        "go",
+        TemperatureProvider("t"),
+        env.registry,
+        system_prompt="s",
+        outdir=env.outdir,
+        temperature=0.7,
+    )
+    assert temperatures == [0.7]
 
 
 def test_outcome_dataclasses_are_the_documented_shape(env: Env) -> None:

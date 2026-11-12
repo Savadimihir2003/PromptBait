@@ -130,6 +130,9 @@ def read_results(path: Path) -> list[dict]:
             logger.warning("skipping malformed results line: %s", line[:120])
             continue
         if isinstance(parsed, dict):
+            if not isinstance(parsed.get("case_id"), str) or not parsed["case_id"]:
+                logger.warning("skipping results row without a case_id")
+                continue
             rows.append(parsed)
     return rows
 
@@ -259,6 +262,7 @@ def _run_one_case(
                 system_prompt=DEFAULT_SYSTEM_PROMPT,
                 outdir=run_dir,
                 max_steps=settings.max_steps,
+                temperature=settings.llm_temperature,
                 defense=defense,
             )
     except ProviderUnavailable as exc:

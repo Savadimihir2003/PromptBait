@@ -8,9 +8,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
-from promptbait.attacks import ATTACKER_ADDRESSES, CATEGORY_COUNTS, load_cases
+from promptbait.attacks import ATTACKER_ADDRESSES, load_cases
 from promptbait.config import Settings
 from promptbait.report import CategoryStats, build_report, compute_asr, write_report
 
@@ -123,7 +121,6 @@ def test_build_report_lists_all_24_cases(tmp_path: Path) -> None:
     report = build_report([MODEL], Settings(), base_dir=tmp_path)
     for case_obj in load_cases():
         assert case_obj.id in report
-    assert sum(CATEGORY_COUNTS.values()) == 24
 
 
 def test_missing_model_results_are_reported_not_crashed(tmp_path: Path) -> None:

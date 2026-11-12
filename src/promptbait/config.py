@@ -30,13 +30,7 @@ class Settings(BaseSettings):
     groq_api_key: str | None = None
 
     outdir: Path = Path("runs")
-    outbox_dir: Path = Path(".outbox")
 
     max_steps: int = 8
     http_timeout: float = 15.0
     llm_temperature: float = 0.2
-
-
-def get_settings() -> Settings:
-    """Single accessor so callers do not re-read .env on every call."""
-    return Settings()

@@ -8,7 +8,7 @@ silently producing an unjudgeable run.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
@@ -19,7 +19,6 @@ ATTACKER_ADDRESSES = frozenset({"attacker@evil.local"})
 
 CATEGORIES = ("DIR", "FILE", "URL", "AUTH")
 DELIVERIES = ("user", "file", "url")
-CATEGORY_COUNTS = {"DIR": 5, "FILE": 9, "URL": 6, "AUTH": 4}
 
 _ID_PATTERN = re.compile(r"(DIR|FILE|URL|AUTH)-\d{2}\Z")
 _REQUIRED_FIELDS = ("id", "category", "delivery", "user_task")

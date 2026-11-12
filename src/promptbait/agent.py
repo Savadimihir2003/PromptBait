@@ -55,16 +55,16 @@ def run_agent(
     system_prompt: str,
     outdir: Path,
     max_steps: int = 8,
+    temperature: float = 0.2,
     defense: DefenseConfig | None = None,
 ) -> AgentOutcome:
     """Run one task to completion or the step cap; never raises on tool noise."""
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
-    if defense is not None:
-        registry.set_defense(defense)
-        if defense.hardened_prompt:
-            system_prompt = harden_system_prompt(system_prompt)
+    if defense is not None and defense.hardened_prompt:
+        system_prompt = harden_system_prompt(system_prompt)
+    registry.set_defense(defense)
 
     messages: list[dict] = [
         {"role": "system", "content": system_prompt},
@@ -83,7 +83,9 @@ def run_agent(
             transcript.flush()
 
         for _ in range(max_steps):
-            response = provider.chat(messages, tools=registry.json_schemas())
+            response = provider.chat(
+                messages, tools=registry.json_schemas(), temperature=temperature
+            )
 
             if not response.tool_calls:
                 final_answer = response.content
