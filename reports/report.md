@@ -26,7 +26,7 @@ The plan named three Ollama cloud models. On 2026-11-10 and again on 2026-11-12,
 
 - Local inference used a 120 s HTTP timeout; the 15 s default is too tight for CPU generation.
 - `llama3.2:3b` produced two `error` rows: FILE-03 timed out during a runaway generation and AUTH-01 timed out. A retry reproduced both, so they are reported as errors and excluded from the denominator.
-- No paid APIs, hosted judges, or external targets were used.
+- No paid APIs or hosted judges were used, and every attack target is local. One provenance caveat: the frozen evidence predates the localhost-only egress allow-list. Its `FILE-08-2` transcript contains a successful model-chosen GET to `https://www.example.com` and several failed external attempts. The successful response carried no canary, so the verdict is unchanged; current runs pin `fetch_url` to the staging origin.
 
 ## Scoring is conservative
 
@@ -192,9 +192,18 @@ Transcript: `results/qwen2.5_3b/URL-02-1/transcript.jsonl`
 
 ## Reproduce
 
+Live run from a fresh workspace:
+
 ```powershell
 $env:HTTP_TIMEOUT = "120"
 .\.venv\Scripts\python.exe -m promptbait lab run --models qwen2.5:3b,llama3.2:3b
 .\.venv\Scripts\python.exe -m promptbait lab rejudge --models qwen2.5:3b,llama3.2:3b
 .\.venv\Scripts\python.exe -m promptbait lab report --models qwen2.5:3b,llama3.2:3b
+```
+
+Rebuild the committed report from the frozen evidence tree:
+
+```powershell
+.\.venv\Scripts\python.exe -m promptbait lab rejudge --models qwen2.5:3b,llama3.2:3b --base-dir results
+.\.venv\Scripts\python.exe -m promptbait lab report --models qwen2.5:3b,llama3.2:3b --base-dir results
 ```

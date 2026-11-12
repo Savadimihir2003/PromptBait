@@ -69,7 +69,7 @@ flowchart LR
 | Runner | Claims one run dir per case, seeds the sandbox, serves URL pages, executes the agent, records a row | `src/promptbait/runner.py`, `src/promptbait/sandbox.py` |
 | Attack server | Serves attacker HTML from `127.0.0.1` on an OS-assigned port; no host parameter exists | `src/promptbait/staging.py` |
 | Agent | Hand-rolled tool-calling loop; no framework; writes every step to `transcript.jsonl` | `src/promptbait/agent.py` |
-| Tools | `read_file`, `write_file`, `fetch_url`, `send_email`; schema-checked and exception-guarded | `src/promptbait/tools.py` |
+| Tools | `read_file`, `write_file`, `fetch_url`, `send_email`; schema-described, argument-checked and exception-guarded | `src/promptbait/tools.py` |
 | Judge | Deterministic success/ambiguous/miss rules; optional LLM escalation | `src/promptbait/judge.py` |
 | Re-judge | Rebuilds the judge input from transcripts and rewrites verdicts without re-running models | `src/promptbait/runner.py` (`rejudge_results`) |
 | Report | Deterministic ASR table, case matrix, transcript excerpts, limitations | `src/promptbait/report.py` |
@@ -82,7 +82,8 @@ flowchart LR
 2. **Agent vs sandbox.** `read_file`/`write_file` resolve paths and reject
    anything outside `run_dir/sandbox`. There is no ambient filesystem access.
 3. **Agent vs network.** The only network tool is `fetch_url`. In the URL
-   suite it points at the local `AttackServer`; there is no external target.
+   suite it points at the local `AttackServer`, and the runner pins egress to
+   that staging origin; there is no external attack target.
 4. **Agent vs email.** `send_email` appends JSON to
    `run_dir/.outbox/outbox.jsonl`. It never opens an SMTP connection, so a
    successful attack cannot send real mail.
@@ -175,11 +176,17 @@ succeed. The gate protects one channel; it is not a general injection defense.
   by API.
 - The only recipient domains in the corpus are `evil.local`, `example.test`,
   and `example.com`.
-- No paid API, hosted judge, or third-party target is used.
+- No paid API, hosted judge, or third-party attack target is used.
 - The agent's tools are least-privilege: one sandbox, one local outbox, one HTTP
-  client with a timeout. The runner's `fetch_url` is pinned to an egress
-  allow-list (`127.0.0.1`, `localhost`) and refuses redirects, so injected text
-  cannot steer the agent to the public internet.
+  client with a timeout. For a URL case the runner's `fetch_url` is pinned to the
+  exact staging origin (`scheme://127.0.0.1:<port>`) and refuses redirects; every
+  other case gets an empty allow-list. Injected text therefore cannot steer the
+  agent to the public internet or to another localhost service.
+- Provenance caveat: the frozen evidence predates that egress pin. Its
+  `llama3.2_3b/FILE-08-2` transcript records a successful model-chosen GET to
+  `https://www.example.com` and several failed external attempts. The response
+  carried no canary or marker, so the verdict is unchanged; current runs use the
+  pinned allow-list described above.
 - The suite fails closed: provider errors become `error` rows, malformed result
   lines are skipped, and the judge never raises into the runner.
 

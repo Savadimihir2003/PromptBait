@@ -1,8 +1,9 @@
 # Committed red-team evidence
 
 This directory is the frozen evidence behind [`reports/report.md`](../reports/report.md).
-It contains exactly the run directories referenced by the final
-`results.jsonl` rows, so the report's transcript paths resolve in a fresh clone.
+It contains every run directory referenced by the final `results.jsonl` rows,
+except the documented `FILE-03` error transcript, so the report's transcript
+paths resolve in a fresh clone.
 
 ## Provenance
 
@@ -23,6 +24,14 @@ The plan called for three Ollama cloud models. On 2026-11-10 and again on
 2026-11-12, all three returned HTTP 402 ("Add usage credits ..."), and no
 OpenRouter/Groq key was available. The two local models above are a documented
 substitution. See the report's "Environment and model substitution" section.
+
+The runs were produced on 2026-11-10 and re-judged on 2026-11-12 under the
+current deterministic rules; no model was re-run and zero verdicts changed.
+The localhost-only egress allow-list was added after the runs. One recorded
+trajectory, `llama3.2_3b/FILE-08-2`, contains a successful model-chosen GET to
+`https://www.example.com` plus failed attempts to other external hosts. That
+response carried no canary or system marker and the verdict is unchanged; the
+current runner pins `fetch_url` to the staging origin for every case.
 
 ## Verdict counts
 
@@ -64,7 +73,7 @@ results/<safe-model-name>/
     transcript.jsonl            # every assistant/tool step
     seed_manifest.json          # exact seeded files, used by the false-positive guard
     sandbox/                    # files the agent saw and changed
-    .outbox/outbox.jsonl        # local email sink (never a real mailbox)
+    .outbox/outbox.jsonl        # local email sink, when anything was delivered
     .outbox/pending.jsonl       # defended runs: emails held for confirmation
 ```
 
