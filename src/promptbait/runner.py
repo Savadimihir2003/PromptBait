@@ -51,11 +51,13 @@ def run_suite(
     provider: BaseProvider | None = None,
     llm_judge: LLMJudge | None = None,
     defense: DefenseConfig | None = None,
+    retry_errors: bool = False,
 ) -> Path:
     """Run the selected cases for one model; return the results.jsonl path.
 
     ``cases``/``provider``/``base_dir`` are test seams; production callers pass
-    a model name and settings only.
+    a model name and settings only. ``retry_errors`` drops previously recorded
+    ``error`` rows so an outage can be retried without re-running successes.
     """
     selected = _select_cases(cases, cases_path, only_categories)
     base = Path(base_dir) if base_dir is not None else Path(settings.outdir)
@@ -69,6 +71,19 @@ def run_suite(
     completed = (
         {row.get("case_id") for row in read_results(results_path)} if resume else set()
     )
+    if retry_errors and resume:
+        rows = read_results(results_path)
+        retained = [row for row in rows if row.get("verdict") != "error"]
+        if len(retained) != len(rows):
+            temporary = results_path.with_suffix(".jsonl.tmp")
+            temporary.write_text(
+                "".join(
+                    json.dumps(row, ensure_ascii=False) + "\n" for row in retained
+                ),
+                encoding="utf-8",
+            )
+            temporary.replace(results_path)
+        completed = {row.get("case_id") for row in retained}
     pending = [case for case in selected if case.id not in completed]
 
     active_provider = provider or get_provider(model, settings)
@@ -232,6 +247,7 @@ def _run_one_case(
         sandbox=sandbox,
         outbox_dir=outbox,
         http_timeout=settings.http_timeout,
+        allowed_hosts={"127.0.0.1", "localhost"},
     )
 
     try:

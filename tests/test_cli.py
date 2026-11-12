@@ -35,6 +35,14 @@ def test_run_parser_can_enable_llm_judge() -> None:
     assert build_parser().parse_args(["lab", "run", "--no-llm-judge"]).llm_judge is False
 
 
+def test_run_parser_can_retry_error_rows() -> None:
+    assert build_parser().parse_args(["lab", "run"]).retry_errors is False
+    assert (
+        build_parser().parse_args(["lab", "run", "--retry-errors"]).retry_errors is True
+    )
+
+
+
 def test_rejudge_defaults_are_deterministic() -> None:
     args = build_parser().parse_args(["lab", "rejudge", "--models", "m"])
     assert args.lab_command == "rejudge"

@@ -50,6 +50,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--base-dir", type=Path, default=None)
     run.add_argument(
+        "--retry-errors",
+        action="store_true",
+        default=False,
+        help="retry previously recorded error rows while keeping successful rows",
+    )
+    run.add_argument(
         "--defense",
         choices=("none", "v1"),
         default="none",
@@ -156,6 +162,7 @@ def _run(args: argparse.Namespace, settings: Settings) -> int:
             base_dir=args.base_dir,
             llm_judge=llm_judge,
             defense=defense,
+            retry_errors=args.retry_errors,
         )
         rows = read_results(results_path)
         successes = sum(row.get("verdict") == "attack_success" for row in rows)

@@ -9,6 +9,7 @@ take down a red-team run.
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html.parser import HTMLParser
@@ -140,10 +141,16 @@ class ToolRegistry:
         http_timeout: float = 15.0,
         http_transport: httpx.BaseTransport | None = None,
         defense: DefenseConfig | None = None,
+        allowed_hosts: Iterable[str] | None = None,
     ) -> None:
         self._sandbox = Path(sandbox).resolve()
         self._outbox = Path(outbox_dir)
         self._defense = defense
+        self._allowed_hosts = (
+            frozenset(host.strip().lower() for host in allowed_hosts if host.strip())
+            if allowed_hosts is not None
+            else None
+        )
         self._pending: list[PendingEmail] = []
         self._next_pending_id = 1
         self._client = httpx.Client(
@@ -229,7 +236,9 @@ class ToolRegistry:
         path, content = _require(args, ("path", "content"))
         resolved = self._jailed(path)
         resolved.parent.mkdir(parents=True, exist_ok=True)
-        resolved.write_text(content, encoding="utf-8")
+        # ``write_bytes`` avoids Windows text-mode newline translation: a
+        # ``\n`` in the tool argument must reach the sandbox unchanged.
+        resolved.write_bytes(content.encode("utf-8"))
         return f"wrote {len(content)} chars to {path}"
 
     def _send_email(self, args: dict) -> str:
@@ -286,11 +295,28 @@ class ToolRegistry:
 
     def _fetch_url(self, args: dict) -> str:
         (url,) = _require(args, ("url",))
-        scheme = urlparse(url).scheme.lower()
+        parsed = urlparse(url)
+        scheme = parsed.scheme.lower()
         if scheme not in ("http", "https"):
             raise ValueError(f"unsupported scheme {scheme!r}; only http/https allowed")
 
-        response = self._client.get(url)
+        if self._allowed_hosts is not None:
+            host = (parsed.hostname or "").lower()
+            if host not in self._allowed_hosts:
+                raise ValueError(
+                    f"host {host!r} is not in the egress allow-list "
+                    f"{sorted(self._allowed_hosts)}"
+                )
+
+        response = self._client.get(
+            url, follow_redirects=self._allowed_hosts is None
+        )
+        if self._allowed_hosts is not None and response.is_redirect:
+            location = response.headers.get("location", "<unknown>")
+            raise ValueError(
+                f"redirect from {url} to {location} refused: "
+                "the egress allow-list forbids redirects"
+            )
         if response.status_code >= 400:
             raise ValueError(f"http {response.status_code} for {url}")
 

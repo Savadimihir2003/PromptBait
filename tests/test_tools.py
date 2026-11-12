@@ -15,7 +15,9 @@ from promptbait.tools import TOOL_SPECS, ToolRegistry
 
 
 def make_registry(
-    tmp_path: Path, transport: httpx.BaseTransport | None = None
+    tmp_path: Path,
+    transport: httpx.BaseTransport | None = None,
+    allowed_hosts: set[str] | None = None,
 ) -> ToolRegistry:
     sandbox = tmp_path / "sandbox"
     sandbox.mkdir(exist_ok=True)
@@ -23,6 +25,7 @@ def make_registry(
         sandbox=sandbox,
         outbox_dir=tmp_path / ".outbox",
         http_transport=transport,
+        allowed_hosts=allowed_hosts,
     )
 
 
@@ -102,6 +105,16 @@ def test_write_file_jailed_to_sandbox(tmp_path: Path) -> None:
     assert not (tmp_path / "escape.txt").exists()
 
 
+def test_write_file_preserves_lf_endings_on_windows(tmp_path: Path) -> None:
+    """A text-mode write rewrote newlines, making seeded files look modified."""
+    registry = make_registry(tmp_path)
+    result = registry.execute(
+        "write_file", {"path": "line-endings.txt", "content": "a\nb\n"}
+    )
+    assert result.ok is True
+    assert (tmp_path / "sandbox" / "line-endings.txt").read_bytes() == b"a\nb\n"
+
+
 # -------------------------------------------------------------- send_email
 
 
@@ -174,6 +187,66 @@ def test_fetch_url_caps_body_size(tmp_path: Path) -> None:
     result = registry.execute("fetch_url", {"url": "http://example.test/page"})
     assert result.ok is True
     assert len(result.output) <= 200_000
+
+
+# ------------------------------------------------------- egress allow-list
+
+
+def test_fetch_url_allow_list_rejects_off_host(tmp_path: Path) -> None:
+    registry = make_registry(
+        tmp_path,
+        transport=html_transport("should never be requested"),
+        allowed_hosts={"127.0.0.1"},
+    )
+    result = registry.execute("fetch_url", {"url": "http://evil.test/exfil"})
+    assert result.ok is False
+    assert "allow" in result.output.lower() or "host" in result.output.lower()
+
+
+def test_fetch_url_allow_list_permits_listed_host(tmp_path: Path) -> None:
+    registry = make_registry(
+        tmp_path,
+        transport=html_transport("localhost page"),
+        allowed_hosts={"127.0.0.1", "localhost"},
+    )
+    result = registry.execute("fetch_url", {"url": "http://127.0.0.1:8000/page"})
+    assert result.ok is True
+    assert "localhost page" in result.output
+
+
+def test_fetch_url_allow_list_rejects_redirects(tmp_path: Path) -> None:
+    """A redirect is an off-host hop even when the first host is allowed."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            302,
+            headers={"location": "http://evil.test/exfil"},
+        )
+
+    registry = make_registry(
+        tmp_path,
+        transport=httpx.MockTransport(handler),
+        allowed_hosts={"127.0.0.1"},
+    )
+    result = registry.execute("fetch_url", {"url": "http://127.0.0.1:8000/page"})
+    assert result.ok is False
+    assert "redirect" in result.output.lower()
+
+
+def test_fetch_url_without_allow_list_still_follows_redirects(tmp_path: Path) -> None:
+    """The allow-list is opt-in; the baseline tools keep their old behaviour."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "example.test":
+            return httpx.Response(302, headers={"location": "http://other.test/final"})
+        return httpx.Response(
+            200, text="final page", headers={"content-type": "text/plain"}
+        )
+
+    registry = make_registry(tmp_path, transport=httpx.MockTransport(handler))
+    result = registry.execute("fetch_url", {"url": "http://example.test/start"})
+    assert result.ok is True
+    assert "final page" in result.output
 
 
 # ------------------------------------------------------ failure / edge paths
