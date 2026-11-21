@@ -26,7 +26,8 @@ def build_parser() -> argparse.ArgumentParser:
         prog="python -m promptbait",
         description="PromptBait prompt-injection red-team lab",
     )
-    lab = parser.add_subparsers(dest="command", required=True).add_parser(
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    lab = subparsers.add_parser(
         "lab", help="red-team lab commands"
     )
     actions = lab.add_subparsers(dest="lab_command", required=True)
@@ -74,6 +75,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="model used only for ambiguous verdicts when --llm-judge is set "
         "(default: the model under test)",
     )
+    run.add_argument(
+        "--agent",
+        choices=("v1", "langgraph"),
+        default="v1",
+        help="agent loop implementation to evaluate: v1 (hand-rolled) or langgraph (default: v1)",
+    )
 
     rejudge = actions.add_parser(
         "rejudge", help="recompute verdicts from recorded transcripts"
@@ -98,6 +105,10 @@ def build_parser() -> argparse.ArgumentParser:
     report.add_argument("--models", default=None)
     report.add_argument("--base-dir", type=Path, default=None)
     report.add_argument("--out", type=Path, default=Path("reports/report.md"))
+
+    serve = subparsers.add_parser("serve", help="launch the interactive web dashboard & API server")
+    serve.add_argument("--port", type=int, default=8000, help="port to bind server to (default: 8000)")
+    serve.add_argument("--host", default="127.0.0.1", help="host to bind server to (default: 127.0.0.1)")
     return parser
 
 
@@ -111,8 +122,19 @@ def main(argv: list[str] | None = None) -> int:
         return _rejudge(args, settings)
     if args.command == "lab" and args.lab_command == "report":
         return _report(args, settings)
+    if args.command == "serve":
+        return _serve(args)
 
     return 2  # pragma: no cover - argparse enforces the command shape
+
+
+def _serve(args: argparse.Namespace) -> int:
+    import uvicorn
+    from .server.app import create_app
+
+    print(f"🚀 Starting PromptBait Interactive Lab & API Server at http://{args.host}:{args.port}")
+    uvicorn.run(create_app(), host=args.host, port=args.port)
+    return 0
 
 
 def _models(value: str | None, settings: Settings) -> list[str]:
@@ -163,6 +185,7 @@ def _run(args: argparse.Namespace, settings: Settings) -> int:
             llm_judge=llm_judge,
             defense=defense,
             retry_errors=args.retry_errors,
+            agent_version=getattr(args, "agent", "v1"),
         )
         rows = read_results(results_path)
         successes = sum(row.get("verdict") == "attack_success" for row in rows)

@@ -53,12 +53,14 @@ def run_suite(
     llm_judge: LLMJudge | None = None,
     defense: DefenseConfig | None = None,
     retry_errors: bool = False,
+    agent_version: str = "v1",
 ) -> Path:
     """Run the selected cases for one model; return the results.jsonl path.
 
     ``cases``/``provider``/``base_dir`` are test seams; production callers pass
     a model name and settings only. ``retry_errors`` drops previously recorded
     ``error`` rows so an outage can be retried without re-running successes.
+    ``agent_version`` selects between "v1" (hand-rolled) and "langgraph".
     """
     selected = _select_cases(cases, cases_path, only_categories)
     base = Path(base_dir) if base_dir is not None else Path(settings.outdir)
@@ -115,6 +117,7 @@ def run_suite(
                 results_path=results_path,
                 defense=defense,
                 run_label=run_label,
+                agent_version=agent_version,
             )
 
     return results_path
@@ -236,6 +239,7 @@ def _run_one_case(
     results_path: Path,
     defense: DefenseConfig | None,
     run_label: str,
+    agent_version: str = "v1",
 ) -> None:
     run_dir = prepare_run_dir(base, run_label, case.id)
     sandbox = run_dir / "sandbox"
@@ -268,16 +272,29 @@ def _run_one_case(
 
     try:
         with registry:
-            outcome = run_agent(
-                user_task,
-                provider,
-                registry,
-                system_prompt=DEFAULT_SYSTEM_PROMPT,
-                outdir=run_dir,
-                max_steps=settings.max_steps,
-                temperature=settings.llm_temperature,
-                defense=defense,
-            )
+            if agent_version == "langgraph":
+                from .agent_langgraph import run_agent_langgraph
+                outcome = run_agent_langgraph(
+                    user_task,
+                    provider,
+                    registry,
+                    system_prompt=DEFAULT_SYSTEM_PROMPT,
+                    outdir=run_dir,
+                    max_steps=settings.max_steps,
+                    temperature=settings.llm_temperature,
+                    defense=defense,
+                )
+            else:
+                outcome = run_agent(
+                    user_task,
+                    provider,
+                    registry,
+                    system_prompt=DEFAULT_SYSTEM_PROMPT,
+                    outdir=run_dir,
+                    max_steps=settings.max_steps,
+                    temperature=settings.llm_temperature,
+                    defense=defense,
+                )
     except ProviderUnavailable as exc:
         record = _record(
             case=case,

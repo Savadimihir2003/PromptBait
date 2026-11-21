@@ -13,12 +13,16 @@ Design notes
 from __future__ import annotations
 
 import json
+import logging
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
 import httpx
 
 from .config import Settings
+
+logger = logging.getLogger("promptbait.providers")
 
 
 class ProviderUnavailable(RuntimeError):
@@ -205,10 +209,31 @@ class OpenAICompatProvider(BaseProvider):
             body["tools"] = tools
             body["tool_choice"] = "auto"
 
-        try:
-            response = self._client.post("/chat/completions", json=body)
-        except httpx.HTTPError as exc:
-            raise ProviderUnavailable(f"{self.model} unreachable: {exc}") from exc
+        max_retries = 3
+        response = None
+        for attempt in range(max_retries + 1):
+            try:
+                response = self._client.post("/chat/completions", json=body)
+            except httpx.HTTPError as exc:
+                raise ProviderUnavailable(f"{self.model} unreachable: {exc}") from exc
+            if response.status_code == 429 and attempt < max_retries:
+                retry_after_str = response.headers.get("retry-after")
+                try:
+                    wait_time = float(retry_after_str) if retry_after_str else (3.0 * (attempt + 1))
+                except ValueError:
+                    wait_time = 3.0 * (attempt + 1)
+                logger.warning(
+                    "Rate limit 429 on %s; waiting %.1fs (attempt %d/%d)",
+                    self.model,
+                    wait_time,
+                    attempt + 1,
+                    max_retries,
+                )
+                time.sleep(min(wait_time, 20.0))
+                continue
+            break
+
+        assert response is not None
         if response.status_code != 200:
             snippet = response.text[:300]
             raise ProviderUnavailable(f"{self.model} http {response.status_code}: {snippet}")
@@ -258,7 +283,14 @@ class OpenAICompatProvider(BaseProvider):
                 {
                     "id": call.id,
                     "type": "function",
-                    "function": {"name": call.name, "arguments": call.arguments},
+                    "function": {
+                        "name": call.name,
+                        "arguments": (
+                            json.dumps(call.arguments)
+                            if isinstance(call.arguments, dict)
+                            else str(call.arguments)
+                        ),
+                    },
                 }
                 for call in calls
             ],

@@ -270,5 +270,7 @@ def test_get_provider_routing(model: str, cls: type, expected_model: str, settin
 
 @pytest.mark.parametrize("model", ["or/some/model", "gq/some/model"])
 def test_get_provider_requires_matching_key(model: str, settings: Settings) -> None:
+    settings.openrouter_api_key = None
+    settings.groq_api_key = None
     with pytest.raises(ProviderConfigError):
         get_provider(model, settings)
