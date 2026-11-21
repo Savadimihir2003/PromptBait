@@ -31,15 +31,15 @@ export const ReportsPage: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="p-8 text-slate-400 font-mono">Loading reports and configurations...</div>;
+    return <div className="p-4 sm:p-8 text-slate-400 font-mono text-sm">Loading reports and configurations...</div>;
   }
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto flex flex-col h-[calc(100vh-4rem)]">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-7xl mx-auto flex flex-col min-h-screen lg:min-h-0 lg:h-[calc(100vh-3.5rem)]">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 flex-shrink-0">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">Security Reports & System Configurations</h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">Security Reports & System Configurations</h2>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Empirical attack success audits, defense ablation metrics, failure taxonomies, and execution boundaries.
           </p>
         </div>

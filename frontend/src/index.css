@@ -1,7 +1,111 @@
 @import "tailwindcss";
 
 @layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-slate-950 text-slate-100 antialiased font-sans;
+    @apply bg-slate-950 text-slate-100 antialiased;
+    font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  }
+
+  /* Custom scrollbars — dark terminal aesthetic */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+  }
+
+  /* Monospace numbers for data */
+  .font-mono {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Selection highlight */
+  ::selection {
+    background-color: rgba(244, 63, 94, 0.3);
+    color: white;
+  }
+
+  /* Focus rings — consistent rose accent */
+  :focus-visible {
+    outline: 2px solid rgba(244, 63, 94, 0.6);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Pre tags in dark contexts */
+  pre {
+    @apply font-mono;
+    tab-size: 2;
+  }
+
+  /* Table improvements */
+  table {
+    border-spacing: 0;
+  }
+}
+
+@layer utilities {
+  /* Glow effects for accent elements */
+  .glow-rose {
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.2);
+  }
+  .glow-emerald {
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+  }
+  .glow-purple {
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.2);
+  }
+
+  /* Animated gradient border for active elements */
+  .border-gradient-rose {
+    border-image: linear-gradient(135deg, #f43f5e, #fb923c) 1;
+  }
+
+  /* Terminal scan-line overlay — subtle */
+  .terminal-scanlines::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    );
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* Live pulse indicator */
+  .live-indicator {
+    animation: livePulse 2s ease-in-out infinite;
+  }
+  @keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
   }
 }

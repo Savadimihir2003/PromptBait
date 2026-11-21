@@ -32,7 +32,8 @@ export async function fetchASR(): Promise<ModelASR[]> {
 }
 
 export async function fetchTranscript(model: string, caseId: string, defense = 'none'): Promise<TranscriptStep[]> {
-  const res = await fetch(`${BASE_URL}/api/transcript/${encodeURIComponent(model)}/${caseId}?defense=${defense}`);
+  const params = new URLSearchParams({ model, defense });
+  const res = await fetch(`${BASE_URL}/api/transcript/${caseId}?${params}`);
   if (!res.ok) throw new Error('Transcript not found');
   return res.json();
 }

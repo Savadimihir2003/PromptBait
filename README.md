@@ -1,9 +1,10 @@
 
 # PromptBait: Enterprise AI Agent Red-Teaming & Indirect Prompt Injection Lab
 
-[![Tests: 233 passed](https://img.shields.io/badge/tests-233%20passed-brightgreen.svg)](#reproduce)
+[![Tests: 245 passed](https://img.shields.io/badge/tests-245%20passed-brightgreen.svg)](#reproduce)
 [![Architecture: Dual-Agent](https://img.shields.io/badge/agent-v1%20%7C%20LangGraph%20v2-blue.svg)](#dual-agent-architecture)
 [![Interface: CLI + Web UI](https://img.shields.io/badge/interface-FastAPI%20%2B%20React%2018-cyan.svg)](#interactive-red-team-dashboard--web-ui)
+[![LLD: API Reference](https://img.shields.io/badge/docs-LLD%20%26%20API-orange.svg)](docs/api-reference.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
 **PromptBait** is an empirical, observable security harness and red-teaming lab for evaluating tool-calling Large Language Model (LLM) agents against indirect and direct prompt injection attacks. It features:
@@ -284,15 +285,15 @@ python -m venv .venv
 ```
 
 
-### 2. Run the Offline Test Suite (~25 seconds)
+### 2. Run the Offline Test Suite (~30 seconds)
 
-   Run the comprehensive 233-test suite covering agent loops, tools, path jailing, URL egress pinning, defense gates, report mathematics, LangGraph integration, and REST/WebSocket endpoints:
+   Run the comprehensive 245-test suite covering agent loops, tools, path jailing, URL egress pinning, defense gates, report mathematics, LangGraph integration, and REST/WebSocket endpoints:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest tests -q -k "not test_staging"
-````
+.\.venv\Scripts\python.exe -m pytest tests -q -k "not test_golden_live"
+```
 
-**Expected**: `233 passed, 6 skipped`.
+**Expected**: `245 passed, 1 skipped`.
 
 ### 3. Launch the Web UI
 
@@ -334,7 +335,10 @@ PromptBait/
 ├── corpus/                    # Reference realistic enterprise documents
 │   ├── configs/               # Production config templates & credentials
 │   └── reports/               # Quarterly financial filings & memos
-├── frontend/                  # React 18 + Vite + Tailwind dashboard
+├── docs/                      # Technical specifications & onboarding
+│   ├── api-reference.md       # Complete Low-Level Design (LLD) & LLM context reference
+│   └── CONTRIBUTING.md        # Developer setup, contributing guidelines & PR checklist
+├── frontend/                  # React 18 + Vite + Tailwind CSS v4 dashboard
 │   ├── src/                   # Components, pages, WebSocket hooks
 │   └── dist/                  # Pre-compiled static assets served by FastAPI
 ├── src/promptbait/
@@ -343,18 +347,18 @@ PromptBait/
 │   ├── config.py              # Environment configuration & settings
 │   ├── defense.py             # Defense v1: Hierarchy, spotlighting, email gate
 │   ├── judge.py               # Deterministic artifact-based evaluation engine
-│   ├── providers.py           # Model adapters (Ollama, OpenRouter, Groq)
+│   ├── providers.py           # Model adapters (Ollama, OpenRouter, Groq with backoff)
 │   ├── runner.py              # Resumable test harness & multi-model orchestrator
 │   ├── sandbox.py             # Per-case sandboxing & seed manifest isolation
 │   ├── staging.py             # Localhost-only attack server (127.0.0.1)
 │   ├── tools.py               # Sandboxed tools: read, write, fetch, email
-│   ├── server/                # FastAPI backend
-│   │   ├── app.py             # Server factory & static mounting
-│   │   ├── routes.py          # REST endpoints (/api/cases, /api/results, etc.)
-│   │   ├── schemas.py         # Pydantic models for API responses
-│   │   └── ws.py              # WebSocket live execution stream (/ws/run)
+│   └── server/                # FastAPI backend
+│       ├── app.py             # Server factory & static mounting
+│       ├── routes.py          # REST endpoints (/api/cases, /api/results, etc.)
+│       ├── schemas.py         # Pydantic models for API responses
+│       └── ws.py              # WebSocket live execution stream & category sweep (/ws/run)
 │   └── __main__.py            # CLI entrypoint: serve, run, rejudge, report
-├── tests/                     # 233 offline unit & integration tests
+├── tests/                     # 245 offline unit & integration tests
 ├── results/                   # Committed evidence (transcripts & sandboxes)
 └── reports/                   # Generated evaluation markdown reports
 ```
@@ -362,6 +366,15 @@ PromptBait/
 
 ---
 
+
+
+---
+
+## Technical Documentation & LLD
+
+For deep technical insights or AI agent context injection:
+- 📘 [Low-Level Design (LLD) & API Reference](docs/api-reference.md): Full endpoint definitions, data models, WebSocket JSON streaming protocols, curl snippets, and Groq rate-limiting architecture.
+- 🛠️ [Developer & Contributing Guide](docs/CONTRIBUTING.md): Step-by-step onboarding, adding new attack vectors, implementing custom defense rules, and testing standards.
 
 ## Ethical & Security Scope
 

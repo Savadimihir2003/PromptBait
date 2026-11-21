@@ -48,11 +48,11 @@ export const CasesPage: React.FC = () => {
   };
 
   return (
-    <div className="p-8 space-y-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-5 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight">24-Case Attack Corpus</h2>
-          <p className="text-sm text-slate-400 mt-1">
+          <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight">24-Case Attack Corpus</h2>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Standardized, strictly validated prompt-injection benchmark covering 4 delivery categories.
           </p>
         </div>

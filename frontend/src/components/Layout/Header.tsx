@@ -1,26 +1,44 @@
-import { Sparkles, CheckCircle2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { CheckCircle2, Activity, Zap } from 'lucide-react';
+import { fetchHealth } from '../../lib/api';
 
 export const Header: React.FC = () => {
+  const [health, setHealth] = useState<{ status: string; ollama_reachable: boolean } | null>(null);
+
+  useEffect(() => {
+    fetchHealth().then(setHealth).catch(() => setHealth({ status: 'error', ollama_reachable: false }));
+  }, []);
+
   return (
-    <header className="h-16 border-b border-slate-800 bg-slate-900/50 backdrop-blur px-8 flex items-center justify-between sticky top-0 z-10">
-      <div className="flex items-center space-x-3">
-        <span className="text-xs font-semibold uppercase px-2.5 py-1 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 tracking-wider">
-          OWASP LLM01 / Agentic ASI01
+    <header className="h-14 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-sm px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 flex-shrink-0">
+      <div className="flex items-center space-x-3 min-w-0">
+        <span className="hidden sm:flex items-center space-x-1.5 text-xs font-mono px-2.5 py-1 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 tracking-wider whitespace-nowrap">
+          OWASP LLM01 · ASI01
         </span>
-        <span className="text-slate-500">•</span>
-        <h2 className="text-sm text-slate-300 font-medium">
-          Indirect Prompt Injection & Tool Misuse Harness
+        <span className="text-slate-600 hidden sm:block">·</span>
+        <h2 className="text-xs sm:text-sm text-slate-400 font-medium truncate">
+          Indirect Prompt Injection &amp; Tool Misuse Harness
         </h2>
       </div>
 
-      <div className="flex items-center space-x-3 text-xs">
-        <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          <span>Deterministic Judge Active</span>
+      <div className="flex items-center space-x-2 flex-shrink-0">
+        {/* API Status */}
+        <div className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md border text-xs font-mono ${
+          health?.status === 'ok'
+            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+            : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+        }`}>
+          {health?.status === 'ok' ? (
+            <><CheckCircle2 className="w-3.5 h-3.5" /><span className="hidden sm:inline">API Online</span></>
+          ) : (
+            <><Activity className="w-3.5 h-3.5" /><span className="hidden sm:inline">Connecting...</span></>
+          )}
         </div>
-        <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400 font-mono">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>LangGraph Ready</span>
+
+        {/* Groq badge */}
+        <div className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md bg-purple-500/10 border border-purple-500/20 text-purple-400 font-mono text-xs">
+          <Zap className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Groq</span>
         </div>
       </div>
     </header>
