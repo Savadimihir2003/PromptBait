@@ -15,11 +15,49 @@ from ..config import Settings
 from ..defense import DEFENSE_V1
 from ..judge import judge_case
 from ..providers import get_provider
-from ..sandbox import prepare_run_dir, seed_sandbox
+from ..sandbox import prepare_run_dir, safe_model_dir, seed_sandbox
 from ..staging import AttackServer
 from ..tools import ToolRegistry
 
 ws_router = APIRouter()
+
+
+def _persist_ws_result(
+    base_dir: Path,
+    run_label: str,
+    record: dict[str, Any],
+) -> None:
+    """Atomically append or update a case result in the model's results.jsonl."""
+    model_dir = base_dir / run_label
+    model_dir.mkdir(parents=True, exist_ok=True)
+    results_path = model_dir / "results.jsonl"
+
+    rows: list[dict[str, Any]] = []
+    if results_path.is_file():
+        for line in results_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            line = line.strip()
+            if line:
+                try:
+                    rows.append(json.loads(line))
+                except Exception:
+                    pass
+
+    # Replace existing entry for this case_id or append
+    replaced = False
+    for i, r in enumerate(rows):
+        if r.get("case_id") == record.get("case_id"):
+            rows[i] = record
+            replaced = True
+            break
+    if not replaced:
+        rows.append(record)
+
+    temp_path = results_path.with_suffix(".jsonl.tmp")
+    temp_path.write_text(
+        "".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows),
+        encoding="utf-8",
+    )
+    temp_path.replace(results_path)
 
 
 async def run_single_case(
@@ -30,17 +68,24 @@ async def run_single_case(
     agent_version: str,
     settings: Settings,
 ) -> dict[str, Any]:
-    """Run a single attack case and stream transcript steps over the websocket.
-
-    Returns a dict with verdict/evidence for sweep aggregation.
-    """
+    """Run a single attack case, stream transcript steps, and persist results to results.jsonl."""
     defense = DEFENSE_V1 if defense_name == "v1" else None
 
+    suffix = f"__defense-{defense_name}" if defense_name != "none" else ""
+    run_label = f"{safe_model_dir(model)}{suffix}"
     base_dir = Path("runs")
-    run_label = f"{model}__live"
     run_dir = prepare_run_dir(base_dir, run_label, case.id)
     sandbox = run_dir / "sandbox"
     outbox = run_dir / ".outbox"
+
+    await websocket.send_json({
+        "type": "started",
+        "case_id": case.id,
+        "model": model,
+        "agent_version": agent_version,
+        "defense": defense_name,
+        "run_dir": str(run_dir),
+    })
 
     server = None
     url = ""
@@ -136,6 +181,22 @@ async def run_single_case(
                         pass
 
         verdict, evidence = judge_case(case, outcome, run_dir)
+
+        # Deterministically persist result to results.jsonl
+        record = {
+            "case_id": case.id,
+            "category": case.category,
+            "delivery": case.delivery,
+            "model": model,
+            "verdict": verdict,
+            "evidence": evidence,
+            "outcome_summary": (outcome.final_answer or "")[:400],
+            "used_steps": len(outcome.steps),
+            "run_dir": run_dir.relative_to(base_dir).as_posix(),
+            "defense": defense_name,
+        }
+        _persist_ws_result(base_dir, run_label, record)
+
         return {
             "case_id": case.id,
             "verdict": verdict,
@@ -143,6 +204,23 @@ async def run_single_case(
             "final_answer": outcome.final_answer,
             "used_steps": len(outcome.steps),
         }
+
+    except Exception as exc:
+        # Save error row to results.jsonl so dashboard stays in sync
+        error_record = {
+            "case_id": case.id,
+            "category": case.category,
+            "delivery": case.delivery,
+            "model": model,
+            "verdict": "error",
+            "evidence": [str(exc)],
+            "outcome_summary": str(exc)[:400],
+            "used_steps": 0,
+            "run_dir": run_dir.relative_to(base_dir).as_posix(),
+            "defense": defense_name,
+        }
+        _persist_ws_result(base_dir, run_label, error_record)
+        raise
 
     finally:
         if server:
@@ -163,14 +241,14 @@ async def run_attack_websocket(websocket: WebSocket):
         settings = Settings()
 
         # ------------------------------------------------------------------ #
-        # Fix 4: Sweep mode                                                   #
+        # Sweep mode (Category or Full Suite)                                #
         # ------------------------------------------------------------------ #
         is_sweep = case_id in ("*", "ALL") or case_id.endswith("-*") or case_id.endswith("_sweep")
 
         if is_sweep:
             category_filter = None
             if case_id.endswith("-*") and len(case_id) > 2:
-                category_filter = case_id[:-2]  # "DIR-*" -> "DIR"
+                category_filter = case_id[:-2]
 
             all_cases = load_cases()
             sweep_cases = [
@@ -184,7 +262,7 @@ async def run_attack_websocket(websocket: WebSocket):
                 "category": category_filter or "ALL",
             })
 
-            # Fix 3: provider_info for sweep
+            # Send provider info
             provider = get_provider(model, settings)
             provider_class = type(provider).__name__
             await websocket.send_json({
@@ -240,22 +318,7 @@ async def run_attack_websocket(websocket: WebSocket):
             await websocket.close()
             return
 
-        defense = DEFENSE_V1 if defense_name == "v1" else None
-
-        base_dir = Path("runs")
-        run_label = f"{model}__live"
-        run_dir = prepare_run_dir(base_dir, run_label, case.id)
-
-        await websocket.send_json({
-            "type": "started",
-            "case_id": case.id,
-            "model": model,
-            "agent_version": agent_version,
-            "defense": defense_name,
-            "run_dir": str(run_dir),
-        })
-
-        # Fix 3: provider_info event
+        # Send provider info
         provider = get_provider(model, settings)
         provider_class = type(provider).__name__
         await websocket.send_json({
