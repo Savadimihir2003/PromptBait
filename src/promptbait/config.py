@@ -33,4 +33,5 @@ class Settings(BaseSettings):
 
     max_steps: int = 8
     http_timeout: float = 15.0
+    ollama_timeout: float = 120.0
     llm_temperature: float = 0.2

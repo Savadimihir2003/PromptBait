@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -45,11 +47,29 @@ def _get_base_dirs() -> list[Path]:
 @router.get("/health", response_model=HealthResponse)
 def get_health():
     settings = Settings()
-    # In sandboxed environments or without a live Ollama daemon, don't block
+    reachable = False
+    if "pytest" not in sys.modules and not os.environ.get("PYTEST_CURRENT_TEST"):
+        try:
+            from urllib.parse import urlsplit
+            import socket
+            sp = urlsplit(settings.ollama_host)
+            host = sp.hostname or "127.0.0.1"
+            if host in ("localhost", "127.0.0.1"):
+                host = "127.0.0.1"
+            port = sp.port or 11434
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.2)
+            try:
+                sock.connect((host, port))
+                reachable = True
+            finally:
+                sock.close()
+        except Exception:
+            reachable = False
     return HealthResponse(
         status="ok",
         ollama_host=settings.ollama_host,
-        ollama_reachable=False,
+        ollama_reachable=reachable,
     )
 
 

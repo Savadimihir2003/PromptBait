@@ -330,5 +330,7 @@ def get_provider(model: str, settings: Settings) -> BaseProvider:
             timeout=settings.http_timeout,
         )
     return OllamaProvider(
-        model=model, host=settings.ollama_host, timeout=settings.http_timeout
+        model=model,
+        host=settings.ollama_host,
+        timeout=getattr(settings, "ollama_timeout", 120.0),
     )

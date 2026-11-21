@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Activity, Zap } from 'lucide-react';
+import { CheckCircle2, Activity, Zap, Server } from 'lucide-react';
 import { fetchHealth } from '../../lib/api';
 
 export const Header: React.FC = () => {
@@ -7,6 +7,10 @@ export const Header: React.FC = () => {
 
   useEffect(() => {
     fetchHealth().then(setHealth).catch(() => setHealth({ status: 'error', ollama_reachable: false }));
+    const interval = setInterval(() => {
+      fetchHealth().then(setHealth).catch(() => setHealth({ status: 'error', ollama_reachable: false }));
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -33,6 +37,18 @@ export const Header: React.FC = () => {
           ) : (
             <><Activity className="w-3.5 h-3.5" /><span className="hidden sm:inline">Connecting...</span></>
           )}
+        </div>
+
+        {/* Ollama Local Status */}
+        <div className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md border text-xs font-mono ${
+          health?.ollama_reachable
+            ? 'bg-sky-500/10 border-sky-500/20 text-sky-400'
+            : 'bg-slate-800/50 border-slate-700/60 text-slate-400'
+        }`}>
+          <Server className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">
+            {health?.ollama_reachable ? 'Ollama Online' : 'Ollama Offline'}
+          </span>
         </div>
 
         {/* Groq badge */}

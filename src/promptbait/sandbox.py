@@ -76,16 +76,30 @@ def _claim_model_root(model_root: Path, model: str) -> None:
                 recorded = str(first.get("model") or "")
             except (OSError, IndexError, json.JSONDecodeError, AttributeError):
                 recorded = ""
-        if not recorded:
-            marker.write_text(model, encoding="utf-8")
-            return
-    if recorded != model:
+    if not recorded:
+        marker.write_text(model, encoding="utf-8")
+        return
+
+    def _is_same_model(rec: str, cand: str) -> bool:
+        if rec == cand:
+            return True
+        rec_base = safe_model_dir(rec).split("__defense-")[0]
+        cand_base = safe_model_dir(cand).split("__defense-")[0]
+        if rec_base == cand_base:
+            rec_has_special = any(c in rec for c in ":/ ")
+            cand_has_special = any(c in cand for c in ":/ ")
+            if rec_has_special and cand_has_special:
+                return rec == cand
+            return True
+        return False
+
+    if not _is_same_model(recorded, model):
         raise ValueError(
             f"results directory {model_root} belongs to model {recorded!r}, "
             f"not {model!r}"
         )
     if not marker.is_file():
-        marker.write_text(model, encoding="utf-8")
+        marker.write_text(recorded or model, encoding="utf-8")
 
 
 def seed_sandbox(sandbox: Path, seeds: dict[str, str]) -> list[Path]:
