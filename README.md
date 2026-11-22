@@ -63,10 +63,10 @@ Open **`http://localhost:8000`** in your browser to access the control plane.
 
 | View | Purpose & Functionality |
 |---|---|
-| **Executive Dashboard** | High-level metrics: Total Attack Success Rate (ASR), Category Breakdown (`DIR`, `FILE`, `URL`, `AUTH`), Verdict Distribution Donut, and Defense Mitigation Deltas. |
+| **Executive Dashboard** | High-level metrics: Total Attack Success Rate (ASR), Category Breakdown (`DIR`, `FILE`, `URL`, `AUTH`), Verdict Distribution Donut, and Defense Mitigation Deltas. Auto-syncs ledger every 60s with 1-click manual refresh. |
 | **Corpus Explorer** | Interactive catalog of all 24 enterprise attack scenarios. Filter by delivery vector, inspect injected payloads, view synthetic canaries, and preview seeded multi-paragraph documents. |
-| **Live Red-Team Runner** | Select any model and agent version (`v1` or `langgraph`), execute targeted single-case or batch attacks, and stream tool invocations and LLM reasoning steps live over WebSockets. |
-| **Forensic Replay & Evidence Inspector** | Step-by-step transcript forensics. Inspect raw tool calls, examine file state mutations in the isolated sandbox, verify `.outbox/outbox.jsonl`, and check canary diffs against `seed_manifest.json`. |
+| **Live Red-Team Runner** | Select any model and agent version (`v1` or `langgraph`), execute targeted single-case or category sweeps, and stream tool invocations and LLM reasoning steps live over WebSockets. |
+| **Forensic Replay & Evidence Inspector** | Step-by-step transcript forensics sorted chronologically with newest runs on top. Inspect raw tool calls, examine file state mutations in the isolated sandbox, verify `.outbox/outbox.jsonl`, and check canary diffs against `seed_manifest.json`. |
 | **Reports & Config Viewer** | Live view of generated ablation reports, active system environment variables, security boundaries, and model timeout configurations. |
 
 
@@ -150,10 +150,11 @@ Point `OLLAMA_HOST` or standard OpenAI base URLs in your `.env`:
 
 ```env
 OLLAMA_HOST=http://127.0.0.1:11434
-HTTP_TIMEOUT=120
+HTTP_TIMEOUT=15.0
+OLLAMA_TIMEOUT=120.0      # 120s buffer for local GGUF cold-load & token generation
 MAX_STEPS=8
 DEFAULT_MODEL=qwen2.5:3b
-````
+```
 
 
 ---
