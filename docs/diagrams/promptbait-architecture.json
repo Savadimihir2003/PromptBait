@@ -1,0 +1,300 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "PromptBait — End-to-End Red-Team Architecture",
+    "output": "promptbait-architecture.html",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "views": [
+      {
+        "id": "live-run",
+        "label": "Live run path",
+        "focus": ["ui", "api", "runner", "sandbox", "agent"],
+        "note": "A case is selected, a fresh run directory is claimed, and one agent engine is chosen."
+      },
+      {
+        "id": "tool-egress",
+        "label": "Tools and egress",
+        "focus": ["agent", "provider", "llm", "tools", "sandbox"],
+        "note": "Every model action crosses the same jailed tool registry and provider boundary."
+      },
+      {
+        "id": "evidence-loop",
+        "label": "Evidence and verdict",
+        "focus": ["artifacts", "judge", "results", "api"],
+        "note": "Artifacts are scored deterministically, then read back by the dashboard."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "ui",
+      "type": "frontend",
+      "label": "Red-Team Console",
+      "sublabel": "Overview · Live · Replay",
+      "pos": [40, 100],
+      "size": [160, 64]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "FastAPI Control Plane",
+      "sublabel": "REST /api · WS /ws/run",
+      "pos": [290, 100],
+      "size": [160, 64]
+    },
+    {
+      "id": "runner",
+      "type": "backend",
+      "label": "Run Orchestrator",
+      "sublabel": "run_suite · run_case",
+      "pos": [540, 100],
+      "size": [160, 64]
+    },
+    {
+      "id": "agent",
+      "type": "backend",
+      "label": "Agent Engine",
+      "sublabel": "v1 loop · v2 LangGraph",
+      "pos": [790, 100],
+      "size": [160, 64]
+    },
+    {
+      "id": "provider",
+      "type": "backend",
+      "label": "Provider Adapters",
+      "sublabel": "Ollama · Groq · OpenRouter",
+      "pos": [1040, 100],
+      "size": [160, 64]
+    },
+    {
+      "id": "corpus",
+      "type": "database",
+      "label": "Attack Corpus",
+      "sublabel": "cases.yaml · 24 cases",
+      "pos": [40, 260],
+      "size": [160, 64]
+    },
+    {
+      "id": "sandbox",
+      "type": "security",
+      "label": "Per-Case Sandbox",
+      "sublabel": "seed_manifest · jail",
+      "pos": [540, 260],
+      "size": [160, 64]
+    },
+    {
+      "id": "tools",
+      "type": "security",
+      "label": "Tool Registry",
+      "sublabel": "read · write · fetch · mail",
+      "pos": [790, 260],
+      "size": [160, 64]
+    },
+    {
+      "id": "llm",
+      "type": "external",
+      "label": "Target LLM",
+      "sublabel": "chat + tool_calls",
+      "pos": [1040, 260],
+      "size": [160, 64]
+    },
+    {
+      "id": "artifacts",
+      "type": "database",
+      "label": "Run Artifacts",
+      "sublabel": "transcript · outbox",
+      "pos": [790, 420],
+      "size": [160, 64]
+    },
+    {
+      "id": "judge",
+      "type": "security",
+      "label": "Deterministic Judge",
+      "sublabel": "canary · marker · writes",
+      "pos": [540, 420],
+      "size": [160, 64]
+    },
+    {
+      "id": "results",
+      "type": "database",
+      "label": "Results & Reports",
+      "sublabel": "results.jsonl · report",
+      "pos": [290, 420],
+      "size": [160, 64]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Harness plane",
+      "wraps": ["ui", "api", "corpus", "runner", "sandbox"]
+    },
+    {
+      "kind": "region",
+      "label": "Target under test",
+      "wraps": ["agent", "provider", "llm", "tools"]
+    },
+    {
+      "kind": "region",
+      "label": "Evidence plane",
+      "wraps": ["artifacts", "judge", "results"]
+    }
+  ],
+  "connections": [
+    {
+      "id": "ui-to-api",
+      "from": "ui",
+      "to": "api",
+      "label": "REST / WS",
+      "variant": "emphasis",
+      "labelAt": [245, 116]
+    },
+    {
+      "id": "api-to-runner",
+      "from": "api",
+      "to": "runner",
+      "label": "start run",
+      "variant": "emphasis",
+      "labelAt": [495, 116]
+    },
+    {
+      "id": "runner-to-agent",
+      "from": "runner",
+      "to": "agent",
+      "label": "agent_version",
+      "variant": "emphasis",
+      "labelAt": [745, 116]
+    },
+    {
+      "id": "agent-to-provider",
+      "from": "agent",
+      "to": "provider",
+      "label": "chat + tools",
+      "labelAt": [995, 116]
+    },
+    {
+      "id": "provider-to-llm",
+      "from": "provider",
+      "to": "llm",
+      "label": "HTTPS",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [1085, 212]
+    },
+    {
+      "id": "runner-to-sandbox",
+      "from": "runner",
+      "to": "sandbox",
+      "label": "seed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [590, 212]
+    },
+    {
+      "id": "agent-to-tools",
+      "from": "agent",
+      "to": "tools",
+      "label": "execute",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [838, 212]
+    },
+    {
+      "id": "tools-to-sandbox",
+      "from": "tools",
+      "to": "sandbox",
+      "label": "jailed FS",
+      "variant": "security",
+      "fromSide": "left",
+      "toSide": "right",
+      "labelAt": [745, 276]
+    },
+    {
+      "id": "tools-to-artifacts",
+      "from": "tools",
+      "to": "artifacts",
+      "label": "steps + outbox",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [815, 372]
+    },
+    {
+      "id": "artifacts-to-judge",
+      "from": "artifacts",
+      "to": "judge",
+      "label": "evidence",
+      "variant": "emphasis",
+      "fromSide": "left",
+      "toSide": "right",
+      "labelAt": [745, 436]
+    },
+    {
+      "id": "judge-to-results",
+      "from": "judge",
+      "to": "results",
+      "label": "verdict",
+      "variant": "emphasis",
+      "fromSide": "left",
+      "toSide": "right",
+      "labelAt": [495, 436]
+    },
+    {
+      "id": "corpus-to-api",
+      "from": "corpus",
+      "to": "api",
+      "fromSide": "right",
+      "toSide": "left",
+      "via": [[245, 292], [245, 132]]
+    },
+    {
+      "id": "results-to-api",
+      "from": "results",
+      "to": "api",
+      "label": "read back",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelAt": [415, 372]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Two engines, one contract",
+      "items": [
+        "v1: explicit message list and sequential tool caller",
+        "v2: LangGraph call_model to execute_tools conditional edges",
+        "Both return AgentOutcome and write the same transcript.jsonl"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Deterministic evidence",
+      "items": [
+        "Verdicts come from artifacts, never from model self-report",
+        "seed_manifest.json prevents planted-canary false positives",
+        "Failed tool calls and held emails never score as success"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Fail-closed boundaries",
+      "items": [
+        "Path jail on every read_file and write_file",
+        "fetch_url is allow-listed to the staging origin",
+        "send_email writes local JSONL; Defense v1 gates external mail"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Closed evidence loop",
+      "items": [
+        "Runner persists one results.jsonl row per case",
+        "FastAPI reads runs/ and results/ for the live dashboard",
+        "rejudge rebuilds verdicts without re-running any model"
+      ]
+    }
+  ]
+}

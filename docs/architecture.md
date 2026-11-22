@@ -6,6 +6,8 @@ trust boundaries the attacks cross, and the invariants that keep the lab safe.
 
 ## System map
 
+> Interactive versions: [architecture](diagrams/promptbait-architecture.html) · [single-case sequence](diagrams/promptbait-run-sequence.html)
+
 ```mermaid
 flowchart LR
     subgraph Untrusted["Untrusted input"]

@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "PromptBait — One Case, Two Agent Engines",
+    "output": "promptbait-run-sequence.html",
+    "viewBox": [1380, 711],
+    "column_fit": "spread",
+    "animation": "trace",
+    "quality_profile": "showcase",
+    "locale": "en",
+    "views": [
+      {
+        "id": "setup",
+        "label": "Setup and isolation",
+        "focus": ["client", "runner", "store"],
+        "note": "Every case gets a fresh run directory, a seeded sandbox, and a manifest before any model call."
+      },
+      {
+        "id": "v1-loop",
+        "label": "Agent v1 loop",
+        "focus": ["runner", "v1", "provider", "llm", "tools", "store"],
+        "note": "A hand-written while-loop calls the model, executes tools, appends a step, and repeats."
+      },
+      {
+        "id": "v2-graph",
+        "label": "Agent v2 graph",
+        "focus": ["runner", "lg", "provider", "llm", "tools", "store"],
+        "note": "A compiled LangGraph StateGraph routes call_model to execute_tools and back through typed state."
+      },
+      {
+        "id": "judge",
+        "label": "Judge and persist",
+        "focus": ["runner", "judge", "client"],
+        "note": "The judge diffs artifacts against the seed manifest, then the verdict is returned and stored."
+      }
+    ]
+  },
+  "participants": [
+    { "id": "client", "type": "external", "label": "Client" },
+    { "id": "runner", "type": "backend", "label": "Runner" },
+    { "id": "v1", "type": "backend", "label": "Agent v1 (loop)" },
+    { "id": "lg", "type": "backend", "label": "Agent v2 (graph)" },
+    { "id": "tools", "type": "security", "label": "Tools" },
+    { "id": "provider", "type": "cloud", "label": "Providers" },
+    { "id": "llm", "type": "external", "label": "Target LLM" },
+    { "id": "judge", "type": "security", "label": "Judge" },
+    { "id": "store", "type": "database", "label": "Run dir" }
+  ],
+  "segments": [
+    { "from": 140, "to": 198, "label": "Setup and isolation" },
+    { "from": 202, "to": 386, "label": "Agent v1 — hand-rolled loop" },
+    { "from": 390, "to": 582, "label": "Agent v2 — LangGraph StateGraph" },
+    { "from": 586, "to": 646, "label": "Judge and persist" }
+  ],
+  "messages": [
+    { "from": "client", "to": "runner", "y": 180, "label": "POST /ws/run → seed + manifest", "variant": "emphasis" },
+    { "from": "runner", "to": "v1", "y": 208, "label": "run_agent(...)", "variant": "emphasis" },
+    { "from": "v1", "to": "provider", "y": 236, "label": "chat(messages, tools)" },
+    { "from": "provider", "to": "llm", "y": 264, "label": "HTTPS" },
+    { "from": "llm", "to": "provider", "y": 292, "label": "text + tool_calls", "variant": "return" },
+    { "from": "v1", "to": "tools", "y": 320, "label": "execute(name, args)", "variant": "security" },
+    { "from": "tools", "to": "v1", "y": 348, "label": "ToolEvent", "variant": "return" },
+    { "from": "v1", "to": "store", "y": 376, "label": "append Step", "variant": "dashed" },
+
+    { "from": "runner", "to": "lg", "y": 404, "label": "run_agent_langgraph(...)", "variant": "emphasis" },
+    { "from": "lg", "to": "provider", "y": 432, "label": "call_model → chat" },
+    { "from": "provider", "to": "llm", "y": 460, "label": "HTTPS" },
+    { "from": "llm", "to": "provider", "y": 488, "label": "text + tool_calls", "variant": "return" },
+    { "from": "lg", "to": "tools", "y": 516, "label": "execute_tools node", "variant": "security" },
+    { "from": "tools", "to": "lg", "y": 544, "label": "ToolEvent", "variant": "return" },
+    { "from": "lg", "to": "store", "y": 572, "label": "record_step", "variant": "dashed" },
+
+    { "from": "runner", "to": "judge", "y": 600, "label": "judge_case(...)", "variant": "emphasis" },
+    { "from": "judge", "to": "client", "y": 628, "label": "verdict + results.jsonl", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "runner", "from": 174, "to": 636, "type": "backend" },
+    { "participant": "v1", "from": 202, "to": 382, "type": "backend" },
+    { "participant": "provider", "from": 230, "to": 298, "type": "cloud" },
+    { "participant": "llm", "from": 258, "to": 286, "type": "external" },
+    { "participant": "tools", "from": 314, "to": 354, "type": "security" },
+    { "participant": "store", "from": 370, "to": 382, "type": "database" },
+    { "participant": "lg", "from": 398, "to": 578, "type": "backend" },
+    { "participant": "provider", "from": 426, "to": 494, "type": "cloud" },
+    { "participant": "llm", "from": 454, "to": 482, "type": "external" },
+    { "participant": "tools", "from": 510, "to": 550, "type": "security" },
+    { "participant": "store", "from": 566, "to": 578, "type": "database" },
+    { "participant": "judge", "from": 594, "to": 634, "type": "security" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Same contract, two engines",
+      "items": [
+        "Both receive the same system prompt, tool schemas, and defense config",
+        "Both emit the same Step objects to transcript.jsonl",
+        "Both return an AgentOutcome the judge can score"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Where they differ",
+      "items": [
+        "v1 keeps messages in a plain list and loops with a for-range",
+        "v2 passes typed AgentGraphState through call_model and execute_tools nodes",
+        "Only the control flow changes; the observable evidence does not"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Deterministic verdict",
+      "items": [
+        "The judge compares artifacts against seed_manifest.json",
+        "Model self-report is never the source of truth",
+        "Failed tool calls and gated emails cannot score a win"
+      ]
+    }
+  ]
+}
