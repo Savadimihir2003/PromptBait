@@ -97,121 +97,121 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-7xl mx-auto font-sans">
       {/* Top Console Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-mono text-slate-500 uppercase tracking-widest">Harness / Analytics</span>
-            <span className="text-slate-600">/</span>
-            <span className="text-xs font-mono text-rose-400 font-semibold uppercase">Security Overview</span>
+            <span className="text-xs font-mono text-slate-300 font-semibold uppercase tracking-wider">Harness / Analytics</span>
+            <span className="text-slate-500">/</span>
+            <span className="text-xs font-mono text-rose-400 font-bold uppercase tracking-wider">Security Overview</span>
           </div>
-          <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight mt-0.5">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight mt-1">
             Empirical Evaluation Dashboard
           </h2>
         </div>
 
         <div className="flex items-center space-x-3">
           <div className="text-right hidden sm:block">
-            <span className="text-[10px] font-mono text-slate-500 block uppercase">Last Synchronized</span>
-            <span className="text-xs font-mono text-slate-300">{lastSyncTime}</span>
+            <span className="text-xs font-mono text-slate-400 block uppercase font-medium">Last Synchronized</span>
+            <span className="text-sm font-mono text-white font-semibold">{lastSyncTime}</span>
           </div>
 
           <button
             onClick={() => loadMetrics()}
             disabled={isRefreshing}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-200 font-mono transition"
+            className="flex items-center space-x-2 px-3.5 py-2 rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-xs sm:text-sm text-slate-100 font-mono font-medium shadow-sm transition"
             title="Reload latest results.jsonl from disk"
           >
-            <RefreshCw className={`w-3.5 h-3.5 text-rose-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 text-rose-400 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span>{isRefreshing ? 'Syncing...' : 'Sync Data'}</span>
           </button>
         </div>
       </div>
 
       {/* KPI Metric Strip */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="p-4 rounded-lg bg-slate-900/90 border border-slate-800/80 space-y-1 relative overflow-hidden">
-          <div className="flex items-center justify-between text-slate-400 text-[11px] font-mono uppercase tracking-wider">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="p-4 rounded-lg bg-slate-900/95 border border-slate-800 space-y-1.5 relative overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between text-slate-300 text-xs font-mono font-semibold uppercase tracking-wider">
             <span>Evaluated Runs</span>
-            <Activity className="w-3.5 h-3.5 text-slate-500" />
+            <Activity className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-2xl font-extrabold text-white font-mono tracking-tight">{totalEvaluated}</div>
-          <div className="text-[11px] text-slate-400 font-mono">
+          <div className="text-3xl font-extrabold text-white font-mono tracking-tight">{totalEvaluated}</div>
+          <div className="text-xs text-slate-300 font-mono font-medium">
             {baselineResults.length} baseline · {defenseResults.length} defended
           </div>
         </div>
 
-        <div className="p-4 rounded-lg bg-slate-900/90 border border-slate-800/80 space-y-1 relative overflow-hidden">
-          <div className="flex items-center justify-between text-slate-400 text-[11px] font-mono uppercase tracking-wider">
+        <div className="p-4 rounded-lg bg-slate-900/95 border border-slate-800 space-y-1.5 relative overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between text-slate-300 text-xs font-mono font-semibold uppercase tracking-wider">
             <span>Peak ASR (Vulnerability)</span>
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+            <AlertTriangle className="w-4 h-4 text-rose-400" />
           </div>
-          <div className="text-2xl font-extrabold text-rose-400 font-mono tracking-tight">
+          <div className="text-3xl font-extrabold text-rose-400 font-mono tracking-tight">
             {highestASR > 0 ? `${highestASR}%` : '0%'}
           </div>
-          <div className="text-[11px] text-rose-400/80 truncate font-mono" title={highestASRModel}>
+          <div className="text-xs text-rose-300 truncate font-mono font-medium" title={highestASRModel}>
             Target: {highestASRModel}
           </div>
         </div>
 
-        <div className="p-4 rounded-lg bg-slate-900/90 border border-slate-800/80 space-y-1 relative overflow-hidden">
-          <div className="flex items-center justify-between text-slate-400 text-[11px] font-mono uppercase tracking-wider">
+        <div className="p-4 rounded-lg bg-slate-900/95 border border-slate-800 space-y-1.5 relative overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between text-slate-300 text-xs font-mono font-semibold uppercase tracking-wider">
             <span>Defense v1 Rate</span>
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="text-2xl font-extrabold text-emerald-400 font-mono tracking-tight">
+          <div className="text-3xl font-extrabold text-emerald-400 font-mono tracking-tight">
             {defenseASR !== null ? `${defenseASR}%` : '—'}
           </div>
-          <div className="text-[11px] text-slate-400 font-mono">
+          <div className="text-xs text-slate-300 font-mono font-medium">
             {defenseASR !== null && highestASR > 0
-              ? `${Math.abs(highestASR - defenseASR)}pp mitigation delta`
+              ? `${(Math.round(Math.abs(highestASR - defenseASR) * 10) / 10).toFixed(1)}pp mitigation delta`
               : 'Hierarchy + Outbox Gate'}
           </div>
         </div>
 
-        <div className="p-4 rounded-lg bg-slate-900/90 border border-slate-800/80 space-y-1 relative overflow-hidden">
-          <div className="flex items-center justify-between text-slate-400 text-[11px] font-mono uppercase tracking-wider">
+        <div className="p-4 rounded-lg bg-slate-900/95 border border-slate-800 space-y-1.5 relative overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between text-slate-300 text-xs font-mono font-semibold uppercase tracking-wider">
             <span>Judge Verification</span>
-            <Bug className="w-3.5 h-3.5 text-purple-400" />
+            <Bug className="w-4 h-4 text-purple-400" />
           </div>
-          <div className="text-lg font-bold text-white font-mono tracking-tight pt-0.5">Deterministic</div>
-          <div className="text-[11px] text-slate-400 font-mono">Canary Tokens · Zero LLM Vibes</div>
+          <div className="text-2xl font-extrabold text-white font-mono tracking-tight pt-0.5">Deterministic</div>
+          <div className="text-xs text-slate-300 font-mono font-medium">Canary Tokens · Zero LLM Vibes</div>
         </div>
       </div>
 
       {/* Main Grid: ASR Matrix Table (Left) + Charts (Right) */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
         {/* ASR Matrix Table */}
-        <div className="xl:col-span-2 p-4 sm:p-5 rounded-lg bg-slate-900/90 border border-slate-800/80 space-y-3">
-          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
+        <div className="xl:col-span-2 p-4 sm:p-5 rounded-lg bg-slate-900/95 border border-slate-800 space-y-3.5 shadow-sm">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
             <div>
-              <h3 className="text-sm font-bold text-white">ASR Matrix by Delivery Category</h3>
-              <p className="text-[11px] text-slate-400 font-mono mt-0.5">
+              <h3 className="text-base font-bold text-white">ASR Matrix by Delivery Category</h3>
+              <p className="text-xs text-slate-300 font-mono mt-0.5">
                 Evaluated percentage and raw successful exploit counts
               </p>
             </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800">
+            <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded bg-slate-950 text-slate-200 border border-slate-700">
               {asrData.length} Models Recorded
             </span>
           </div>
 
           {asrData.length === 0 ? (
-            <div className="py-12 text-center text-slate-600 font-mono text-xs">
+            <div className="py-12 text-center text-slate-400 font-mono text-sm">
               No evaluation rows found in results/ or runs/ directories.
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full text-left text-sm border-collapse">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-mono uppercase text-[10px] tracking-wider">
-                    <th className="py-2.5 px-3">Model &amp; Weights</th>
-                    <th className="py-2.5 px-2 text-center">DIR (5)</th>
-                    <th className="py-2.5 px-2 text-center">FILE (9)</th>
-                    <th className="py-2.5 px-2 text-center">URL (6)</th>
-                    <th className="py-2.5 px-2 text-center">AUTH (4)</th>
-                    <th className="py-2.5 px-3 text-center">Overall ASR</th>
+                  <tr className="border-b border-slate-700 bg-slate-950/70 text-slate-200 font-mono uppercase text-xs font-bold tracking-wider">
+                    <th className="py-3 px-3.5">Model &amp; Weights</th>
+                    <th className="py-3 px-2 text-center">DIR (5)</th>
+                    <th className="py-3 px-2 text-center">FILE (9)</th>
+                    <th className="py-3 px-2 text-center">URL (6)</th>
+                    <th className="py-3 px-2 text-center">AUTH (4)</th>
+                    <th className="py-3 px-3 text-center">Overall ASR</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/50 font-mono">
+                <tbody className="divide-y divide-slate-800 font-mono">
                   {asrData.map((m) => {
                     const dir = m.categories.find((c: CategoryASR) => c.category === 'DIR');
                     const file = m.categories.find((c: CategoryASR) => c.category === 'FILE');
@@ -220,39 +220,39 @@ export const DashboardPage: React.FC = () => {
 
                     const renderCell = (cat?: CategoryASR) => {
                       if (!cat || cat.scored === 0) {
-                        return <span className="text-slate-700 font-mono">—</span>;
+                        return <span className="text-slate-600 font-mono font-medium">—</span>;
                       }
                       const asr = cat.asr_percent ?? 0;
                       const colorClass =
                         asr >= 50
-                          ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                           : asr > 0
-                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                          : 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30';
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                          : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
 
                       return (
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${colorClass}`}>
-                          {asr}% <span className="opacity-70 text-[9px]">({cat.success}/{cat.scored})</span>
+                        <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold border ${colorClass}`}>
+                          {asr}% <span className="opacity-90 text-[11px] font-medium ml-0.5">({cat.success}/{cat.scored})</span>
                         </span>
                       );
                     };
 
                     return (
-                      <tr key={m.model} className="hover:bg-slate-800/30 transition">
-                        <td className="py-2.5 px-3 font-semibold text-slate-200 text-xs">
-                          <span className="font-mono text-white">{m.model}</span>
+                      <tr key={m.model} className="hover:bg-slate-800/40 transition">
+                        <td className="py-3 px-3.5 font-bold text-white text-sm">
+                          <span className="font-mono text-slate-100">{m.model}</span>
                         </td>
-                        <td className="py-2.5 px-2 text-center">{renderCell(dir)}</td>
-                        <td className="py-2.5 px-2 text-center">{renderCell(file)}</td>
-                        <td className="py-2.5 px-2 text-center">{renderCell(url)}</td>
-                        <td className="py-2.5 px-2 text-center">{renderCell(auth)}</td>
-                        <td className="py-2.5 px-3 text-center">
+                        <td className="py-3 px-2 text-center">{renderCell(dir)}</td>
+                        <td className="py-3 px-2 text-center">{renderCell(file)}</td>
+                        <td className="py-3 px-2 text-center">{renderCell(url)}</td>
+                        <td className="py-3 px-2 text-center">{renderCell(auth)}</td>
+                        <td className="py-3 px-3 text-center">
                           {m.overall_asr !== null ? (
-                            <span className="font-bold text-white text-xs px-2 py-0.5 rounded bg-slate-950 border border-slate-800">
+                            <span className="font-extrabold text-white text-sm px-2.5 py-1 rounded bg-slate-950 border border-slate-700">
                               {m.overall_asr}%
                             </span>
                           ) : (
-                            <span className="text-slate-700">—</span>
+                            <span className="text-slate-600 font-medium">—</span>
                           )}
                         </td>
                       </tr>
@@ -267,16 +267,16 @@ export const DashboardPage: React.FC = () => {
         {/* Right Column: Visual Charts */}
         <div className="space-y-4">
           {/* Verdict Distribution Donut */}
-          <div className="p-4 rounded-lg bg-slate-900/90 border border-slate-800/80">
-            <h3 className="text-xs font-bold text-white uppercase font-mono tracking-wider mb-2">
+          <div className="p-4 rounded-lg bg-slate-900/95 border border-slate-800 shadow-sm">
+            <h3 className="text-sm font-bold text-white uppercase font-mono tracking-wider mb-2.5">
               Verdict Breakdown
             </h3>
             {donutData.length === 0 ? (
-              <div className="py-8 text-center text-slate-600 font-mono text-xs">No scored results yet</div>
+              <div className="py-8 text-center text-slate-400 font-mono text-xs font-medium">No scored results yet</div>
             ) : (
               <>
-                <div className="h-36 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-36 w-full flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height={144}>
                     <PieChart>
                       <Pie
                         data={donutData}
@@ -286,6 +286,7 @@ export const DashboardPage: React.FC = () => {
                         outerRadius={62}
                         paddingAngle={3}
                         dataKey="value"
+                        isAnimationActive={false}
                       >
                         {donutData.map((entry, i) => (
                           <Cell key={`cell-${i}`} fill={entry.color} stroke="#090d16" strokeWidth={2} />
@@ -294,23 +295,24 @@ export const DashboardPage: React.FC = () => {
                       <Tooltip
                         contentStyle={{
                           backgroundColor: '#090d16',
-                          borderColor: '#334155',
+                          borderColor: '#475569',
                           borderRadius: '6px',
-                          fontSize: '11px',
+                          fontSize: '12px',
+                          color: '#f8fafc',
                           fontFamily: 'monospace',
                         }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
-                <div className="space-y-1 text-xs mt-2 font-mono">
+                <div className="space-y-1.5 text-xs mt-2.5 font-mono">
                   {donutData.map(d => (
-                    <div key={d.name} className="flex items-center justify-between text-slate-300 text-[11px]">
+                    <div key={d.name} className="flex items-center justify-between text-slate-200 text-xs font-medium">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
-                        <span>{d.name}</span>
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                        <span className="text-slate-200">{d.name}</span>
                       </div>
-                      <span className="font-bold">{d.value}</span>
+                      <span className="font-bold text-white">{d.value}</span>
                     </div>
                   ))}
                 </div>
@@ -320,28 +322,35 @@ export const DashboardPage: React.FC = () => {
 
           {/* Model Vulnerability Bar Chart */}
           {barData.length > 0 && (
-            <div className="p-4 rounded-lg bg-slate-900/90 border border-slate-800/80">
-              <h3 className="text-xs font-bold text-white uppercase font-mono tracking-wider mb-2">
+            <div className="p-4 rounded-lg bg-slate-900/95 border border-slate-800 shadow-sm">
+              <h3 className="text-sm font-bold text-white uppercase font-mono tracking-wider mb-2.5">
                 Overall ASR by Model
               </h3>
-              <div className="h-32">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={barData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="model" tick={{ fill: '#64748b', fontSize: 9, fontFamily: 'monospace' }} />
-                    <YAxis tick={{ fill: '#64748b', fontSize: 9, fontFamily: 'monospace' }} domain={[0, 100]} unit="%" />
+              <div className="h-36 w-full">
+                <ResponsiveContainer width="100%" height={144}>
+                  <BarChart data={barData} margin={{ top: 5, right: 10, left: -20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis
+                      dataKey="model"
+                      tick={{ fill: '#cbd5e1', fontSize: 10, fontFamily: 'monospace', fontWeight: 600 }}
+                      interval={0}
+                      angle={-15}
+                      textAnchor="end"
+                    />
+                    <YAxis tick={{ fill: '#cbd5e1', fontSize: 11, fontFamily: 'monospace', fontWeight: 600 }} domain={[0, 100]} unit="%" />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: '#090d16',
-                        borderColor: '#334155',
+                        borderColor: '#475569',
                         borderRadius: '6px',
-                        fontSize: '11px',
+                        fontSize: '12px',
+                        color: '#f8fafc',
                         fontFamily: 'monospace',
                       }}
                       formatter={(val: any) => [`${val ?? 0}%`, 'ASR']}
                       labelFormatter={(label: any) => barData.find(d => d.model === String(label))?.fullModel || String(label)}
                     />
-                    <Bar dataKey="asr" fill="#f43f5e" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="asr" fill="#f43f5e" radius={[2, 2, 0, 0]} isAnimationActive={false} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

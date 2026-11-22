@@ -22,13 +22,13 @@ const NavContent: React.FC<{ currentTab: string; onSelectTab: (tab: string) => v
           <ShieldAlert className="w-5 h-5 text-rose-400" />
         </div>
         <div>
-          <h1 className="font-bold text-base tracking-wide text-white">PromptBait</h1>
-          <p className="text-[11px] text-slate-500 font-mono">Agent Security Lab v2</p>
+          <h1 className="font-extrabold text-base tracking-wide text-white">PromptBait</h1>
+          <p className="text-xs text-slate-300 font-mono font-medium">Agent Security Lab v2</p>
         </div>
       </div>
     </div>
 
-    <nav className="p-3 space-y-0.5 flex-1">
+    <nav className="p-3 space-y-1 flex-1">
       {navItems.map((item) => {
         const Icon = item.icon;
         const active = currentTab === item.id;
@@ -38,19 +38,19 @@ const NavContent: React.FC<{ currentTab: string; onSelectTab: (tab: string) => v
             onClick={() => { onSelectTab(item.id); onClose?.(); }}
             className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all group relative ${
               active
-                ? 'bg-rose-500/10 text-white border border-rose-500/20'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
+                ? 'bg-rose-500/15 text-white border border-rose-500/30 shadow-sm'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent'
             }`}
           >
-            {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-6 bg-rose-500 rounded-r-full" />}
-            <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-rose-400' : 'text-slate-500 group-hover:text-slate-400'}`} />
+            {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-7 bg-rose-500 rounded-r-full" />}
+            <Icon className={`w-4 h-4 flex-shrink-0 ${active ? 'text-rose-400' : 'text-slate-400 group-hover:text-slate-200'}`} />
             <div className="flex-1 text-left min-w-0">
-              <div className={`font-medium text-sm truncate ${active ? 'text-white' : ''}`}>{item.label}</div>
-              <div className="text-[11px] text-slate-500 truncate">{item.description}</div>
+              <div className={`font-semibold text-sm truncate ${active ? 'text-white' : 'text-slate-200'}`}>{item.label}</div>
+              <div className="text-xs text-slate-400 truncate font-normal">{item.description}</div>
             </div>
             {item.badge && (
-              <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                item.badge === 'LIVE' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-slate-800 text-slate-400'
+              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+                item.badge === 'LIVE' ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-slate-800 text-slate-200 border border-slate-700'
               }`}>{item.badge}</span>
             )}
           </button>
@@ -58,18 +58,18 @@ const NavContent: React.FC<{ currentTab: string; onSelectTab: (tab: string) => v
       })}
     </nav>
 
-    <div className="p-4 border-t border-slate-800/60 space-y-2">
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-slate-500">Framework</span>
-        <span className="text-emerald-400 font-mono">LangGraph</span>
+    <div className="p-4 border-t border-slate-800 space-y-2 bg-slate-950/40">
+      <div className="flex items-center justify-between text-xs font-medium">
+        <span className="text-slate-400">Framework</span>
+        <span className="text-emerald-400 font-mono font-semibold">LangGraph</span>
       </div>
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-slate-500">Judge</span>
-        <span className="text-rose-400 font-mono">Deterministic</span>
+      <div className="flex items-center justify-between text-xs font-medium">
+        <span className="text-slate-400">Judge</span>
+        <span className="text-rose-400 font-mono font-semibold">Deterministic</span>
       </div>
-      <div className="flex items-center justify-between text-xs">
-        <span className="text-slate-500">Corpus</span>
-        <span className="text-slate-300 font-mono">24 cases · 4 categories</span>
+      <div className="flex items-center justify-between text-xs font-medium">
+        <span className="text-slate-400">Corpus</span>
+        <span className="text-slate-200 font-mono font-semibold">24 cases · 4 categories</span>
       </div>
     </div>
   </>

@@ -110,39 +110,39 @@ export const RunnerPage: React.FC = () => {
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto flex flex-col h-[calc(100vh-3.5rem)] space-y-4">
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3 flex-shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3 flex-shrink-0">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-mono text-slate-500 uppercase tracking-widest">Harness / Execution Engine</span>
-            <span className="text-slate-600">/</span>
-            <span className="text-xs font-mono text-rose-400 font-semibold uppercase">Interactive Red-Team Runner</span>
+            <span className="text-xs font-mono text-slate-300 font-semibold uppercase tracking-wider">Harness / Execution Engine</span>
+            <span className="text-slate-500">/</span>
+            <span className="text-xs font-mono text-rose-400 font-bold uppercase tracking-wider">Interactive Red-Team Runner</span>
           </div>
-          <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight mt-0.5">Live Agent Attack Console</h2>
+          <h2 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight mt-1">Live Agent Attack Console</h2>
         </div>
 
         {providerInfo && (
-          <div className="flex items-center space-x-2 px-3 py-1 rounded bg-slate-900 border border-slate-800 text-xs font-mono text-slate-300">
-            <div className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-md bg-slate-900 border border-slate-700 text-xs font-mono font-semibold text-slate-200 shadow-sm">
+            <div className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-pulse" />
             <span className="text-slate-400">Target Provider:</span>
-            <span className="text-purple-300 font-semibold">{providerInfo.provider}</span>
+            <span className="text-purple-300 font-bold">{providerInfo.provider}</span>
           </div>
         )}
       </div>
 
       {/* Mode Selector & Controls */}
-      <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3.5 space-y-3 flex-shrink-0">
+      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4 space-y-3.5 flex-shrink-0 shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-2">
           {/* Mode Switcher */}
-          <div className="flex rounded-md bg-slate-950 p-1 border border-slate-800/80 text-xs font-mono">
+          <div className="flex rounded-md bg-slate-950 p-1 border border-slate-800 text-xs font-mono">
             {(['single', 'category', 'full'] as SweepMode[]).map(mode => (
               <button
                 key={mode}
                 onClick={() => setSweepMode(mode)}
                 disabled={isRunning}
-                className={`px-3 py-1 rounded transition text-xs font-medium ${
+                className={`px-3 py-1.5 rounded transition text-xs font-semibold ${
                   sweepMode === mode
-                    ? 'bg-rose-500/20 text-rose-300 font-semibold border border-rose-500/30'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40 shadow-sm'
+                    : 'text-slate-300 hover:text-white'
                 }`}
               >
                 {mode === 'single' ? 'Single Case' : mode === 'category' ? 'Category Sweep' : 'Full Suite (24)'}
@@ -151,7 +151,7 @@ export const RunnerPage: React.FC = () => {
           </div>
 
           {isRunning && (
-            <div className="flex items-center space-x-2 px-2.5 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-mono">
+            <div className="flex items-center space-x-2 px-3 py-1 rounded bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-mono font-bold">
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
               <span>Target: {currentRunningCase}</span>
             </div>
@@ -161,12 +161,12 @@ export const RunnerPage: React.FC = () => {
         {/* Configuration Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
           <div>
-            <label className="text-[11px] font-mono uppercase text-slate-400 block mb-1">Model Under Test</label>
+            <label className="text-xs font-mono uppercase text-slate-300 font-bold block mb-1.5">Model Under Test</label>
             <select
               value={model}
               onChange={e => setModel(e.target.value)}
               disabled={isRunning}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-rose-500"
+              className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-2 text-xs sm:text-sm text-slate-100 font-mono font-medium focus:outline-none focus:border-rose-500"
             >
               <optgroup label="Groq Frontier (Cloud API)">
                 <option value="gq/openai/gpt-oss-120b">gq/openai/gpt-oss-120b (Primary Frontier)</option>
@@ -182,12 +182,12 @@ export const RunnerPage: React.FC = () => {
 
           {sweepMode === 'single' ? (
             <div>
-              <label className="text-[11px] font-mono uppercase text-slate-400 block mb-1">Target Scenario</label>
+              <label className="text-xs font-mono uppercase text-slate-300 font-bold block mb-1.5">Target Scenario</label>
               <select
                 value={caseId}
                 onChange={e => setCaseId(e.target.value)}
                 disabled={isRunning}
-                className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-rose-500"
+                className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-2 text-xs sm:text-sm text-slate-100 font-mono font-medium focus:outline-none focus:border-rose-500"
               >
                 <optgroup label="DIR — Direct Instruction Overrides">
                   <option value="DIR-01">DIR-01 (MaintenanceBot Override)</option>
@@ -225,12 +225,12 @@ export const RunnerPage: React.FC = () => {
             </div>
           ) : sweepMode === 'category' ? (
             <div>
-              <label className="text-[11px] font-mono uppercase text-slate-400 block mb-1">Target Category</label>
+              <label className="text-xs font-mono uppercase text-slate-300 font-bold block mb-1.5">Target Category</label>
               <select
                 value={category}
                 onChange={e => setCategory(e.target.value)}
                 disabled={isRunning}
-                className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-rose-500"
+                className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-2 text-xs sm:text-sm text-slate-100 font-mono font-medium focus:outline-none focus:border-rose-500"
               >
                 <option value="DIR">DIR (5 cases) — Direct Instruction Overrides</option>
                 <option value="FILE">FILE (9 cases) — Indirect Document Poisoning</option>
@@ -239,18 +239,18 @@ export const RunnerPage: React.FC = () => {
               </select>
             </div>
           ) : (
-            <div className="bg-slate-950 border border-slate-800/80 rounded px-3 py-1.5 text-[11px] font-mono text-slate-400">
+            <div className="bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs font-mono text-slate-300 font-medium">
               Sweep all 24 cases sequentially (with 2.5s Groq rate limit pacing)
             </div>
           )}
 
           <div>
-            <label className="text-[11px] font-mono uppercase text-slate-400 block mb-1">Defense Guardrail</label>
+            <label className="text-xs font-mono uppercase text-slate-300 font-bold block mb-1.5">Defense Guardrail</label>
             <select
               value={defense}
               onChange={e => setDefense(e.target.value)}
               disabled={isRunning}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-rose-500"
+              className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-2 text-xs sm:text-sm text-slate-100 font-mono font-medium focus:outline-none focus:border-rose-500"
             >
               <option value="none">Baseline (Zero Defenses)</option>
               <option value="v1">Defense v1 (Spotlighting + Outbox Gate)</option>
@@ -258,12 +258,12 @@ export const RunnerPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="text-[11px] font-mono uppercase text-slate-400 block mb-1">Agent Architecture</label>
+            <label className="text-xs font-mono uppercase text-slate-300 font-bold block mb-1.5">Agent Architecture</label>
             <select
               value={agentVersion}
               onChange={e => setAgentVersion(e.target.value as 'v1' | 'langgraph')}
               disabled={isRunning}
-              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-rose-500"
+              className="w-full bg-slate-950 border border-slate-700 rounded px-2.5 py-2 text-xs sm:text-sm text-slate-100 font-mono font-medium focus:outline-none focus:border-rose-500"
             >
               <option value="langgraph">LangGraph (StateGraph Engine)</option>
               <option value="v1">v1 (Hand-rolled While Loop)</option>
@@ -273,16 +273,16 @@ export const RunnerPage: React.FC = () => {
           <button
             onClick={runAttack}
             disabled={isRunning}
-            className="h-8 px-4 rounded bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs font-semibold font-mono flex items-center justify-center space-x-1.5 transition shadow-sm"
+            className="h-9 px-4 rounded-md bg-rose-600 hover:bg-rose-500 disabled:opacity-50 text-white text-xs sm:text-sm font-bold font-mono flex items-center justify-center space-x-2 transition shadow-sm"
           >
             {isRunning ? (
               <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <RefreshCw className="w-4 h-4 animate-spin" />
                 <span>Executing...</span>
               </>
             ) : (
               <>
-                <Play className="w-3.5 h-3.5 fill-white" />
+                <Play className="w-4 h-4 fill-white" />
                 <span>{isSweep ? 'Execute Sweep' : 'Launch Attack'}</span>
               </>
             )}
@@ -292,9 +292,9 @@ export const RunnerPage: React.FC = () => {
 
       {/* Sweep summary chips if sweep completed */}
       {isSweep && sweepResults.length > 0 && (
-        <div className="p-3 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between flex-wrap gap-2 flex-shrink-0">
-          <div className="flex items-center space-x-2 text-xs font-mono">
-            <span className="text-slate-400">Sweep Completed:</span>
+        <div className="p-3.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between flex-wrap gap-2 flex-shrink-0 shadow-sm">
+          <div className="flex items-center space-x-2 text-xs sm:text-sm font-mono">
+            <span className="text-slate-300 font-medium">Sweep Completed:</span>
             <span className="text-white font-bold">{sweepTotal} Cases Evaluated</span>
             <span className="text-slate-600">·</span>
             <span className="text-rose-400 font-bold">{sweepSuccesses} Vulnerable (PWNED)</span>
@@ -306,12 +306,12 @@ export const RunnerPage: React.FC = () => {
             {sweepResults.map(r => (
               <span
                 key={r.case_id}
-                className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border ${
+                className={`px-2.5 py-0.5 rounded text-xs font-mono font-bold border ${
                   r.verdict === 'attack_success'
-                    ? 'bg-rose-500/15 border-rose-500/30 text-rose-300'
+                    ? 'bg-rose-500/20 border-rose-500/40 text-rose-300'
                     : r.verdict === 'miss'
-                    ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                    : 'bg-amber-500/15 border-amber-500/30 text-amber-300'
+                    ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
+                    : 'bg-amber-500/20 border-amber-500/40 text-amber-300'
                 }`}
               >
                 {r.case_id}: {r.verdict === 'attack_success' ? 'PWNED' : r.verdict === 'miss' ? 'SAFE' : 'ERR'}
@@ -322,81 +322,81 @@ export const RunnerPage: React.FC = () => {
       )}
 
       {/* Live Terminal */}
-      <div className="flex-1 bg-[#090d16] rounded-lg border border-slate-800/80 flex flex-col overflow-hidden font-mono text-xs shadow-inner min-h-0">
-        <div className="px-3 py-2 border-b border-slate-800/80 bg-slate-950/90 flex items-center justify-between flex-shrink-0">
+      <div className="flex-1 bg-[#090d16] rounded-lg border border-slate-800 flex flex-col overflow-hidden font-mono text-xs shadow-inner min-h-0">
+        <div className="px-3.5 py-2.5 border-b border-slate-800 bg-slate-950 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center space-x-2">
             <div className="flex space-x-1.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-rose-500/70" />
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500/70" />
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
+              <div className="w-2.5 h-2.5 rounded-full bg-rose-500/80" />
+              <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
             </div>
-            <Terminal className="w-3.5 h-3.5 text-slate-500 ml-1.5" />
-            <span className="text-slate-300 font-semibold text-[11px]">Telemetry Stream: {currentRunningCase || 'IDLE'}</span>
+            <Terminal className="w-4 h-4 text-slate-400 ml-1.5" />
+            <span className="text-slate-200 font-bold text-xs sm:text-sm">Telemetry Stream: {currentRunningCase || 'IDLE'}</span>
           </div>
 
-          <div className="flex items-center space-x-3 text-[11px] text-slate-500">
+          <div className="flex items-center space-x-3 text-xs text-slate-400 font-medium">
             {isRunning && (
-              <span className="flex items-center space-x-1 text-emerald-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <span className="flex items-center space-x-1 text-emerald-400 font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 <span>STREAMING</span>
               </span>
             )}
-            <span>{steps.length} steps recorded</span>
+            <span className="text-slate-300 font-semibold">{steps.length} steps recorded</span>
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-2.5 font-mono text-xs">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-xs">
           {steps.length === 0 && !isRunning && (
-            <div className="h-full flex flex-col items-center justify-center text-slate-600 space-y-2">
-              <Terminal className="w-8 h-8 text-slate-800" />
-              <p>Select configuration parameters above and click "Launch Attack" to stream live tool telemetry.</p>
-              <p className="text-[11px] text-slate-700">All results will be deterministically judged and persisted to results.jsonl.</p>
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 font-mono text-sm space-y-2">
+              <Terminal className="w-8 h-8 text-slate-600" />
+              <p className="text-slate-300 font-medium">Select configuration parameters above and click "Launch Attack" to stream live tool telemetry.</p>
+              <p className="text-xs text-slate-400">All results will be deterministically judged and persisted to results.jsonl.</p>
             </div>
           )}
 
           {steps.map((st, i) => (
             <div
               key={i}
-              className={`p-3 rounded border text-xs leading-relaxed ${
+              className={`p-3.5 rounded-lg border text-sm leading-relaxed ${
                 st.role === 'tool'
-                  ? 'bg-slate-900/90 border-slate-800 text-slate-300'
-                  : 'bg-rose-950/15 border-rose-900/30 text-rose-200'
+                  ? 'bg-slate-900/95 border-slate-800 text-slate-200'
+                  : 'bg-rose-950/20 border-rose-900/40 text-rose-200'
               }`}
             >
-              <div className="flex items-center justify-between font-bold text-[10px] uppercase mb-1 opacity-70">
-                <span className="flex items-center space-x-1">
+              <div className="flex items-center justify-between font-bold text-xs uppercase mb-1.5 opacity-90">
+                <span className="flex items-center space-x-1.5">
                   {st.role === 'tool' ? (
                     <>
-                      <Server className="w-3 h-3 text-cyan-400" />
-                      <span className="text-cyan-300">Tool Executed: {st.tool_name}</span>
+                      <Server className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="text-cyan-300 font-mono font-bold">Tool Executed: {st.tool_name}</span>
                     </>
                   ) : (
                     <>
-                      <Zap className="w-3 h-3 text-rose-400" />
-                      <span className="text-rose-300">Agent Reasoning</span>
+                      <Zap className="w-3.5 h-3.5 text-rose-400" />
+                      <span className="text-rose-300 font-mono font-bold">Agent Reasoning</span>
                     </>
                   )}
                 </span>
                 {st.tool_ok !== undefined && (
-                  <span className={st.tool_ok ? 'text-emerald-400' : 'text-rose-400'}>
+                  <span className={`font-mono font-bold ${st.tool_ok ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {st.tool_ok ? 'GATE: PASSED' : 'GATE: DENIED / BLOCKED'}
                   </span>
                 )}
               </div>
 
-              {st.content && <p className="whitespace-pre-wrap font-sans text-xs text-slate-200">{st.content}</p>}
+              {st.content && <p className="whitespace-pre-wrap font-sans text-sm text-slate-100 font-normal">{st.content}</p>}
 
               {st.tool_args && (
-                <div className="mt-1 bg-slate-950/80 p-2 rounded text-[11px] text-slate-400 overflow-x-auto border border-slate-900">
-                  <span className="text-slate-500 font-bold block text-[10px] mb-0.5">INPUT ARGS:</span>
-                  <pre>{JSON.stringify(st.tool_args, null, 2)}</pre>
+                <div className="mt-2 bg-slate-950 p-2.5 rounded border border-slate-800/80 text-xs text-slate-300 overflow-x-auto">
+                  <span className="text-slate-400 font-bold block text-xs mb-1 uppercase tracking-wider">INPUT ARGS:</span>
+                  <pre className="font-mono">{JSON.stringify(st.tool_args, null, 2)}</pre>
                 </div>
               )}
 
               {st.tool_output && (
-                <div className="mt-1 bg-slate-950/80 p-2 rounded text-[11px] text-slate-400 overflow-x-auto max-h-28 border border-slate-900">
-                  <span className="text-slate-500 font-bold block text-[10px] mb-0.5">OUTPUT DATA:</span>
-                  <pre className="whitespace-pre-wrap">{st.tool_output}</pre>
+                <div className="mt-2 bg-slate-950 p-2.5 rounded border border-slate-800/80 text-xs text-slate-300 overflow-x-auto max-h-36">
+                  <span className="text-slate-400 font-bold block text-xs mb-1 uppercase tracking-wider">OUTPUT DATA:</span>
+                  <pre className="whitespace-pre-wrap font-mono">{st.tool_output}</pre>
                 </div>
               )}
             </div>
@@ -404,29 +404,29 @@ export const RunnerPage: React.FC = () => {
 
           {verdict && !isSweep && (
             <div
-              className={`p-3.5 rounded-lg border mt-3 ${
+              className={`p-4 rounded-lg border mt-3.5 ${
                 verdict.verdict === 'attack_success'
-                  ? 'bg-rose-500/10 border-rose-500/40 text-rose-300'
-                  : 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                  ? 'bg-rose-500/15 border-rose-500/40 text-rose-300'
+                  : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
               }`}
             >
-              <div className="flex items-center space-x-2 font-bold text-sm mb-1.5">
+              <div className="flex items-center space-x-2 font-bold text-base mb-2">
                 {verdict.verdict === 'attack_success' ? (
                   <>
-                    <XCircle className="w-4 h-4 text-rose-400" />
+                    <XCircle className="w-5 h-5 text-rose-400" />
                     <span>FORENSIC VERDICT: ATTACK SUCCEEDED (VULNERABLE)</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                     <span>FORENSIC VERDICT: ATTACK RESISTED (COMPLIANT)</span>
                   </>
                 )}
               </div>
-              <div className="text-[11px] text-slate-400 uppercase font-mono tracking-wider font-semibold mb-1">
+              <div className="text-xs text-slate-300 uppercase font-mono tracking-wider font-bold mb-1.5">
                 Deterministic Evidence:
               </div>
-              <ul className="text-xs list-disc list-inside space-y-0.5 font-sans">
+              <ul className="text-sm list-disc list-inside space-y-1 font-sans font-medium text-slate-200">
                 {verdict.evidence.map((ev, i) => (
                   <li key={i}>{ev}</li>
                 ))}
