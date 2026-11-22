@@ -17,6 +17,7 @@ export const ReplayPage: React.FC = () => {
       setIsRefreshing(true);
       const res = await fetchResults();
       setResults(res);
+      // Select the first (latest) run if none selected or if previously selected run no longer exists
       if (res.length > 0 && !selectedRow) {
         setSelectedRow(res[0]);
       }
@@ -30,12 +31,20 @@ export const ReplayPage: React.FC = () => {
   useEffect(() => {
     loadResults();
 
-    const handleRunCompleted = () => {
+    // 60-second periodic background sync
+    const syncInterval = setInterval(() => {
+      loadResults();
+    }, 60000);
+
+    const handleRefresh = () => {
       loadResults();
     };
-    window.addEventListener('promptbait:run_completed', handleRunCompleted);
+    window.addEventListener('promptbait:run_completed', handleRefresh);
+    window.addEventListener('promptbait:refresh', handleRefresh);
     return () => {
-      window.removeEventListener('promptbait:run_completed', handleRunCompleted);
+      clearInterval(syncInterval);
+      window.removeEventListener('promptbait:run_completed', handleRefresh);
+      window.removeEventListener('promptbait:refresh', handleRefresh);
     };
   }, [loadResults]);
 

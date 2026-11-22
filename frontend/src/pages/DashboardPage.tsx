@@ -29,13 +29,21 @@ export const DashboardPage: React.FC = () => {
   useEffect(() => {
     loadMetrics();
 
-    // Auto-refresh metrics whenever any run finishes in Runner
-    const handleRunCompleted = () => {
+    // Periodic 60s background sync
+    const syncInterval = setInterval(() => {
+      loadMetrics();
+    }, 60000);
+
+    // Auto-refresh metrics whenever any run finishes in Runner or global sync is triggered
+    const handleRefresh = () => {
       loadMetrics();
     };
-    window.addEventListener('promptbait:run_completed', handleRunCompleted);
+    window.addEventListener('promptbait:run_completed', handleRefresh);
+    window.addEventListener('promptbait:refresh', handleRefresh);
     return () => {
-      window.removeEventListener('promptbait:run_completed', handleRunCompleted);
+      clearInterval(syncInterval);
+      window.removeEventListener('promptbait:run_completed', handleRefresh);
+      window.removeEventListener('promptbait:refresh', handleRefresh);
     };
   }, [loadMetrics]);
 

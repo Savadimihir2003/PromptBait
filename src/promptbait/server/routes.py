@@ -44,6 +44,24 @@ def _get_base_dirs() -> list[Path]:
     return dirs
 
 
+def _row_timestamp(base_dirs: list[Path], r: dict[str, Any]) -> float:
+    """Extract chronological timestamp or filesystem mtime for ordering runs newest-first."""
+    ts_str = r.get("timestamp") or r.get("created_at")
+    if ts_str:
+        try:
+            from datetime import datetime
+            return datetime.fromisoformat(str(ts_str).replace("Z", "+00:00")).timestamp()
+        except Exception:
+            pass
+    run_dir = r.get("run_dir", "")
+    if run_dir:
+        for b in base_dirs:
+            cand = b / run_dir
+            if cand.exists():
+                return cand.stat().st_mtime
+    return 0.0
+
+
 @router.get("/health", response_model=HealthResponse)
 def get_health():
     settings = Settings()
@@ -114,8 +132,7 @@ def get_case(case_id: str):
 @router.get("/results", response_model=list[ResultRow])
 def get_results(model: str | None = None, defense: str | None = None):
     base_dirs = _get_base_dirs()
-    rows: list[dict[str, Any]] = []
-    seen_keys: set[tuple[str, str, str]] = set()
+    candidates: list[dict[str, Any]] = []
 
     for base_dir in base_dirs:
         for path in base_dir.glob("**/results.jsonl"):
@@ -131,10 +148,18 @@ def get_results(model: str | None = None, defense: str | None = None):
                 row_model = r.get("model", "")
                 if model and row_model != model and safe_model_dir(model) not in dir_name:
                     continue
-                key = (r.get("case_id", ""), row_model, r.get("defense", "none"))
-                if key not in seen_keys:
-                    seen_keys.add(key)
-                    rows.append(r)
+                candidates.append(r)
+
+    # Sort descending by timestamp so latest runs appear at index 0 (on top)
+    candidates.sort(key=lambda r: _row_timestamp(base_dirs, r), reverse=True)
+
+    rows: list[dict[str, Any]] = []
+    seen_keys: set[tuple[str, str, str]] = set()
+    for r in candidates:
+        key = (r.get("case_id", ""), r.get("model", ""), r.get("defense", "none"))
+        if key not in seen_keys:
+            seen_keys.add(key)
+            rows.append(r)
 
     return [
         ResultRow(
@@ -156,16 +181,23 @@ def get_results(model: str | None = None, defense: str | None = None):
 @router.get("/asr", response_model=list[ModelASR])
 def get_asr():
     base_dirs = _get_base_dirs()
-    all_rows: list[dict[str, Any]] = []
-    seen_keys: set[tuple[str, str, str]] = set()
+    candidates: list[dict[str, Any]] = []
 
     for base_dir in base_dirs:
         for path in base_dir.glob("**/results.jsonl"):
             for r in read_results(path):
-                key = (r.get("case_id", ""), r.get("model", ""), r.get("defense", "none"))
-                if key not in seen_keys:
-                    seen_keys.add(key)
-                    all_rows.append(r)
+                candidates.append(r)
+
+    # Prioritize latest evaluation runs per model/case
+    candidates.sort(key=lambda r: _row_timestamp(base_dirs, r), reverse=True)
+
+    all_rows: list[dict[str, Any]] = []
+    seen_keys: set[tuple[str, str, str]] = set()
+    for r in candidates:
+        key = (r.get("case_id", ""), r.get("model", ""), r.get("defense", "none"))
+        if key not in seen_keys:
+            seen_keys.add(key)
+            all_rows.append(r)
 
     table = compute_asr(all_rows)
     output: list[ModelASR] = []

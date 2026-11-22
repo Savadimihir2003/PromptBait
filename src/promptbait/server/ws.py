@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -42,15 +43,9 @@ def _persist_ws_result(
                 except Exception:
                     pass
 
-    # Replace existing entry for this case_id or append
-    replaced = False
-    for i, r in enumerate(rows):
-        if r.get("case_id") == record.get("case_id"):
-            rows[i] = record
-            replaced = True
-            break
-    if not replaced:
-        rows.append(record)
+    # Remove any existing entry for this case_id and insert newest run at index 0 (top)
+    rows = [r for r in rows if r.get("case_id") != record.get("case_id")]
+    rows.insert(0, record)
 
     temp_path = results_path.with_suffix(".jsonl.tmp")
     temp_path.write_text(
@@ -194,6 +189,7 @@ async def run_single_case(
             "used_steps": len(outcome.steps),
             "run_dir": run_dir.relative_to(base_dir).as_posix(),
             "defense": defense_name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         _persist_ws_result(base_dir, run_label, record)
 
@@ -218,6 +214,7 @@ async def run_single_case(
             "used_steps": 0,
             "run_dir": run_dir.relative_to(base_dir).as_posix(),
             "defense": defense_name,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
         _persist_ws_result(base_dir, run_label, error_record)
         raise

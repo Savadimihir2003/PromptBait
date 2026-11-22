@@ -27,12 +27,19 @@ export const ReportsPage: React.FC = () => {
   useEffect(() => {
     loadReportData();
 
-    const handleRunCompleted = () => {
+    const syncInterval = setInterval(() => {
+      loadReportData();
+    }, 60000);
+
+    const handleRefresh = () => {
       loadReportData();
     };
-    window.addEventListener('promptbait:run_completed', handleRunCompleted);
+    window.addEventListener('promptbait:run_completed', handleRefresh);
+    window.addEventListener('promptbait:refresh', handleRefresh);
     return () => {
-      window.removeEventListener('promptbait:run_completed', handleRunCompleted);
+      clearInterval(syncInterval);
+      window.removeEventListener('promptbait:run_completed', handleRefresh);
+      window.removeEventListener('promptbait:refresh', handleRefresh);
     };
   }, [loadReportData]);
 

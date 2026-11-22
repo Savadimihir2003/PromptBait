@@ -1,17 +1,41 @@
-import { useEffect, useState } from 'react';
-import { CheckCircle2, Activity, Zap, Server } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { CheckCircle2, Activity, Zap, Server, RefreshCw } from 'lucide-react';
 import { fetchHealth } from '../../lib/api';
 
 export const Header: React.FC = () => {
   const [health, setHealth] = useState<{ status: string; ollama_reachable: boolean } | null>(null);
+  const [countdown, setCountdown] = useState<number>(60);
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  const triggerGlobalSync = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      await fetchHealth()
+        .then(setHealth)
+        .catch(() => setHealth({ status: 'error', ollama_reachable: false }));
+      window.dispatchEvent(new CustomEvent('promptbait:refresh'));
+    } finally {
+      setTimeout(() => setIsSyncing(false), 500);
+    }
+  }, []);
 
   useEffect(() => {
-    fetchHealth().then(setHealth).catch(() => setHealth({ status: 'error', ollama_reachable: false }));
-    const interval = setInterval(() => {
-      fetchHealth().then(setHealth).catch(() => setHealth({ status: 'error', ollama_reachable: false }));
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    fetchHealth()
+      .then(setHealth)
+      .catch(() => setHealth({ status: 'error', ollama_reachable: false }));
+
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          triggerGlobalSync();
+          return 60;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [triggerGlobalSync]);
 
   return (
     <header className="h-14 border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-sm px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30 flex-shrink-0">
@@ -26,6 +50,26 @@ export const Header: React.FC = () => {
       </div>
 
       <div className="flex items-center space-x-2 flex-shrink-0">
+        {/* Unified 60s Auto-Sync & Manual Refresh Button */}
+        <button
+          onClick={() => {
+            setCountdown(60);
+            triggerGlobalSync();
+          }}
+          disabled={isSyncing}
+          className="flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md bg-slate-900 hover:bg-slate-800 border border-slate-800/90 hover:border-slate-700 text-xs font-mono text-slate-300 transition group cursor-pointer"
+          title="Auto-syncs ledger every 60s. Click to sync immediately."
+        >
+          <RefreshCw
+            className={`w-3.5 h-3.5 text-rose-400 ${
+              isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-300'
+            }`}
+          />
+          <span className="text-[11px] font-medium hidden sm:inline">
+            {isSyncing ? 'Syncing...' : `Sync (${countdown}s)`}
+          </span>
+        </button>
+
         {/* API Status */}
         <div className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md border text-xs font-mono ${
           health?.status === 'ok'
